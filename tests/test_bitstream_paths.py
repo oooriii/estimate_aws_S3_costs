@@ -23,8 +23,20 @@ from bitstream_paths import parse_bitstream_ref
             "/bitstream/10256/3066/1/192.pdf",
         ),
         (
-            "/bitstream/10256/14130/1/reassessment-of-the-foliose.pdf",
-            "/bitstream/10256/14130/1/reassessment-of-the-foliose.pdf",
+            "/bitstream/handle/10256.2/29212/MSVV28_6664.pdf?isAllowed=y&sequence=1",
+            "/bitstream/10256.2/29212/1/MSVV28_6664.pdf",
+        ),
+        (
+            "/bitstream/handle/10256.2/7275/ID1_33_TC.pdf;jsessionid=ABC?sequence=1",
+            "/bitstream/10256.2/7275/1/ID1_33_TC.pdf",
+        ),
+        (
+            "/bitstream/handle/10256.2/1598/ID1_3285_TC.pdf?sequence=1&amp;isAllowed=y",
+            "/bitstream/10256.2/1598/1/ID1_3285_TC.pdf",
+        ),
+        (
+            "/bitstream/10256.2/29921/1/FLMM_02_17.pdf",
+            "/bitstream/10256.2/29921/1/FLMM_02_17.pdf",
         ),
     ],
 )
