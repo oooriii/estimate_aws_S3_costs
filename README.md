@@ -73,6 +73,7 @@ uv run python main.py report 20260615_downloads_ddocs.txt \
 | `--growth` | Annual growth rate (default: `10%`) |
 | `--forecast-years` | Multi-year forecast in PDF (default: `0` = hide) |
 | `--compare-storage-classes` | Include storage-class comparison (omit value to compare all) |
+| `--show-calculations` | Print step-by-step formulas (quantity × unit price), AWS calculator style |
 | `--abuse-top` | Top N IPs and user-agents in PDF (default: `15`) |
 | `--abuse-min-bytes-pct` | Abuse threshold for CSV highlighting (default: `5`) |
 
@@ -127,6 +128,7 @@ Options:
 | `--pricing` | Pricing JSON file (default: `pricing/eu-south-2.json`) |
 | `--storage-class` | `STANDARD`, `STANDARD_IA`, `INTELLIGENT_TIERING`, or `GLACIER_INSTANT` (detailed estimate) |
 | `--compare-storage-classes` | Compare S3 direct costs across classes (comma-separated, or omit value to compare all) |
+| `--show-calculations` | Print step-by-step formulas (quantity × unit price), AWS calculator style |
 
 Compare storage classes (egress and GET costs are the same; only storage and IT monitoring differ):
 
