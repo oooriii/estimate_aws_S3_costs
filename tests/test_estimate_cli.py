@@ -44,6 +44,7 @@ def test_cmd_estimate_runs_on_sample_log(sample_log_file, tmp_path):
             "compare_storage_classes": None,
             "projection_mode": "simple",
             "forecast_years": 0,
+            "pdf": None,
         },
     )()
     assert cmd_estimate(args) == 0
@@ -68,6 +69,7 @@ def test_cmd_estimate_with_storage_class_comparison(sample_log_file, tmp_path):
             "compare_storage_classes": "STANDARD,GLACIER_INSTANT",
             "projection_mode": "simple",
             "forecast_years": 0,
+            "pdf": None,
         },
     )()
     assert cmd_estimate(args) == 0
