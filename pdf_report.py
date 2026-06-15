@@ -165,6 +165,7 @@ class _PdfBuilder:
         rows: tuple[tuple[str, ...], ...],
         *,
         col_widths: tuple[float, ...] | None = None,
+        wrap_columns: frozenset[int] | None = None,
     ) -> None:
         if not rows:
             self.pdf.set_font("Helvetica", "I", 10)
@@ -183,15 +184,94 @@ class _PdfBuilder:
             self.pdf.epw,
         )
         line_height = 5
-        self._draw_table_row(headers, widths, line_height, style="B", size=9)
+        wrap = wrap_columns or frozenset()
+        draw_row = (
+            self._draw_wrapped_table_row if wrap else self._draw_table_row
+        )
+        draw_row(headers, widths, line_height, style="B", size=9, wrap_columns=wrap)
 
         self.pdf.set_font("Helvetica", "", 8)
         for row in rows:
-            if self.pdf.get_y() > 270:
+            if self.pdf.get_y() > 265:
                 self.pdf.add_page()
-                self._draw_table_row(headers, widths, line_height, style="B", size=9)
+                draw_row(
+                    headers,
+                    widths,
+                    line_height,
+                    style="B",
+                    size=9,
+                    wrap_columns=wrap,
+                )
                 self.pdf.set_font("Helvetica", "", 8)
-            self._draw_table_row(row, widths, line_height, style="", size=8)
+            draw_row(row, widths, line_height, style="", size=8, wrap_columns=wrap)
+
+    def _text_lines(
+        self,
+        text: str,
+        width: float,
+        *,
+        style: str,
+        size: int,
+    ) -> tuple[str, ...]:
+        self.pdf.set_font("Helvetica", style, size)
+        safe = _pdf_text(text)
+        if not safe:
+            return ("",)
+        if self.pdf.get_string_width(safe) <= max(width - 2, 1):
+            return (safe,)
+
+        lines: list[str] = []
+        current = ""
+        for char in safe:
+            trial = current + char
+            if self.pdf.get_string_width(trial) <= max(width - 2, 1):
+                current = trial
+            else:
+                if current:
+                    lines.append(current)
+                current = char
+        if current:
+            lines.append(current)
+        return tuple(lines) or ("",)
+
+    def _draw_wrapped_table_row(
+        self,
+        cells: tuple[str, ...],
+        widths: tuple[float, ...],
+        line_height: float,
+        *,
+        style: str,
+        size: int,
+        wrap_columns: frozenset[int],
+    ) -> None:
+        x_start = self.pdf.l_margin
+        y_start = self.pdf.get_y()
+        cell_lines = tuple(
+            self._text_lines(value, widths[index], style=style, size=size)
+            if index in wrap_columns
+            else (_pdf_text(value),)
+            for index, value in enumerate(cells)
+        )
+        max_lines = max(len(lines) for lines in cell_lines)
+        row_height = max_lines * line_height
+
+        x = x_start
+        for index, (lines, width) in enumerate(zip(cell_lines, widths, strict=True)):
+            self.pdf.rect(x, y_start, width, row_height)
+            if len(lines) == 1 and index not in wrap_columns:
+                text_y = y_start + (row_height - line_height) / 2
+                self.pdf.set_font("Helvetica", style, size)
+                self.pdf.set_xy(x + 0.5, text_y)
+                self.pdf.cell(width - 1, line_height, lines[0], border=0)
+            else:
+                self.pdf.set_font("Helvetica", style, size)
+                self.pdf.set_xy(x + 0.5, y_start + 0.5)
+                for line in lines:
+                    self.pdf.set_x(x + 0.5)
+                    self.pdf.cell(width - 1, line_height, line, border=0)
+            x += width
+
+        self.pdf.set_xy(x_start, y_start + row_height)
 
     def _draw_table_row(
         self,
@@ -201,6 +281,7 @@ class _PdfBuilder:
         *,
         style: str,
         size: int,
+        wrap_columns: frozenset[int] | None = None,
     ) -> None:
         self.pdf.set_x(self.pdf.l_margin)
         self.pdf.set_font("Helvetica", style, size)
@@ -318,7 +399,7 @@ def _add_demand_sections(
     table_rows = tuple(
         (
             str(index),
-            _truncate_pdf(display_filename(item), limit=36),
+            display_filename(item),
             item.item_id or "-",
             f"{item.records:,}",
             _format_share_pct(item.records, stats.total_records),
@@ -342,7 +423,8 @@ def _add_demand_sections(
             "Bot rec.",
         ),
         table_rows,
-        col_widths=(8, 40, 24, 14, 12, 18, 12, 10, 12),
+        col_widths=(7, 52, 22, 13, 11, 17, 11, 9, 11),
+        wrap_columns=frozenset({1}),
     )
 
     builder.add_section(
