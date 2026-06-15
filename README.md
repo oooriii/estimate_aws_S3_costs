@@ -43,6 +43,27 @@ uv run python main.py analyze 20260615_downloads_ddocs.txt \
   --csv-ips reports/problematic-ips.csv
 ```
 
+### File demand report
+
+Rank downloaded files (DSpace bitstreams) by records and bytes. URL variants such as `/bitstream/10256/…/file.pdf` and `/bitstream/handle/10256/…/file.pdf?sequence=N` are normalized to one path per document.
+
+By default writes:
+
+- `reports/file-demand.pdf`
+- `reports/top-files.csv`
+
+```bash
+uv run python main.py demand 20260615_downloads_ddocs_anubis.txt --top 25
+```
+
+| Flag | Description |
+|------|-------------|
+| `--top` | Top N files in terminal and exports (default: `25`) |
+| `--all-paths` | Include non-bitstream paths (static assets, etc.) |
+| `--output-dir` | Default directory for PDF and CSV (default: `reports/`) |
+| `--pdf` / `--no-pdf` | PDF output path or skip PDF |
+| `--csv` / `--no-csv` | CSV output path or skip CSV |
+
 ### Management report (PDF + CSV)
 
 Combined report: traffic analysis, bots, countries, AWS cost estimate, and optional storage-class comparison. By default writes:
