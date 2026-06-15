@@ -6,6 +6,7 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 from parser import parse_file
+from pricing_cli import register_pricing_commands
 from report import print_traffic_stats
 
 
@@ -48,6 +49,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     analyze.add_argument("file", type=Path, help="Input log file")
     analyze.set_defaults(func=cmd_analyze)
+
+    register_pricing_commands(subparsers)
 
     return parser
 
