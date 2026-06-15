@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from parser import TrafficStats
 from pricing.schema import PricingConfig
 from pricing.tiers import tiered_cost
-from projection import project_traffic
+from projection import compound_annual_factor, project_traffic
 
 BYTES_PER_GB = 1024**3
 DEFAULT_CONSERVATIVE_SAFETY_MARGIN = 0.20
@@ -81,8 +81,13 @@ def _monitoring_monthly_cost(inventory: Inventory, pricing: PricingConfig) -> fl
     )
 
 
-def _annualize(monthly: tuple[CostLine, ...]) -> tuple[CostLine, ...]:
-    return tuple(CostLine(line.label, line.usd * 12.0) for line in monthly)
+def _annualize(
+    monthly: tuple[CostLine, ...],
+    *,
+    growth_rate: float = 0.0,
+) -> tuple[CostLine, ...]:
+    factor = compound_annual_factor(growth_rate)
+    return tuple(CostLine(line.label, line.usd * factor) for line in monthly)
 
 
 def calculate_s3_direct(
@@ -127,7 +132,7 @@ def calculate_s3_direct(
     return ScenarioCosts(
         name=scenario_name,
         monthly=monthly,
-        annual=_annualize(monthly),
+        annual=_annualize(monthly, growth_rate=inventory.annual_growth_rate),
     )
 
 
@@ -193,7 +198,7 @@ def calculate_cloudfront(
     return ScenarioCosts(
         name=scenario_name,
         monthly=monthly,
-        annual=_annualize(monthly),
+        annual=_annualize(monthly, growth_rate=inventory.annual_growth_rate),
     )
 
 
@@ -202,10 +207,17 @@ def build_estimates(
     inventory: Inventory,
     pricing: PricingConfig,
     storage_class: str,
+    *,
+    projection_mode: str = "simple",
 ) -> EstimateResult:
-    realistic_traffic = project_traffic(stats, safety_margin=0.0)
+    realistic_traffic = project_traffic(
+        stats,
+        mode=projection_mode,
+        safety_margin=0.0,
+    )
     conservative_traffic = project_traffic(
         stats,
+        mode=projection_mode,
         safety_margin=DEFAULT_CONSERVATIVE_SAFETY_MARGIN,
     )
 
@@ -275,9 +287,15 @@ def compare_storage_classes(
     inventory: Inventory,
     pricing: PricingConfig,
     storage_classes: tuple[str, ...],
+    *,
+    projection_mode: str = "simple",
 ) -> tuple[ScenarioCosts, ...]:
     """S3 direct realistic costs per storage class (egress/GET unchanged)."""
-    realistic_traffic = project_traffic(stats, safety_margin=0.0)
+    realistic_traffic = project_traffic(
+        stats,
+        mode=projection_mode,
+        safety_margin=0.0,
+    )
     return tuple(
         calculate_s3_direct(
             realistic_traffic.monthly_requests,

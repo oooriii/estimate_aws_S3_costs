@@ -11,7 +11,7 @@ from estimate_report import print_estimate_report, print_storage_class_compariso
 from parser import parse_file
 from pricing.loader import load_pricing_config
 from pricing.schema import DEFAULT_GROWTH_RATE, STORAGE_CLASSES
-from projection import project_traffic
+from projection import PROJECTION_MODES, project_traffic
 
 
 def parse_growth_rate(value: str) -> float:
@@ -56,7 +56,20 @@ def register_estimate_command(subparsers: argparse._SubParsersAction) -> None:
     estimate.add_argument(
         "--growth",
         default=f"{DEFAULT_GROWTH_RATE:.0%}",
-        help="Annual growth rate (e.g. 10%% or 0.1). Default: 10%%",
+        help="Annual growth rate for storage, traffic, and items (e.g. 10%%)",
+    )
+    estimate.add_argument(
+        "--projection-mode",
+        choices=PROJECTION_MODES,
+        default="simple",
+        help="Traffic projection: simple (30-day month) or calendar month",
+    )
+    estimate.add_argument(
+        "--forecast-years",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Show multi-year cost forecast for the realistic S3 scenario (0 = hide)",
     )
     estimate.add_argument(
         "--pricing",
@@ -103,6 +116,10 @@ def cmd_estimate(args: argparse.Namespace) -> int:
         )
         return 1
 
+    if args.forecast_years < 0:
+        console.print("[red]Error:[/red] --forecast-years must be >= 0.")
+        return 1
+
     compare_classes: tuple[str, ...] | None = None
     if args.compare_storage_classes is not None:
         try:
@@ -144,8 +161,14 @@ def cmd_estimate(args: argparse.Namespace) -> int:
         items=args.items,
         annual_growth_rate=growth_rate,
     )
-    traffic = project_traffic(stats)
-    result = build_estimates(stats, inventory, pricing, args.storage_class)
+    traffic = project_traffic(stats, mode=args.projection_mode)
+    result = build_estimates(
+        stats,
+        inventory,
+        pricing,
+        args.storage_class,
+        projection_mode=args.projection_mode,
+    )
 
     print_estimate_report(
         console,
@@ -155,6 +178,8 @@ def cmd_estimate(args: argparse.Namespace) -> int:
         result=result,
         pricing_warnings=pricing_warnings,
         selected_storage_class=args.storage_class,
+        growth_rate=growth_rate,
+        forecast_years=args.forecast_years,
     )
 
     if compare_classes is not None:
@@ -163,6 +188,7 @@ def cmd_estimate(args: argparse.Namespace) -> int:
             inventory,
             pricing,
             compare_classes,
+            projection_mode=args.projection_mode,
         )
         print_storage_class_comparison(
             console,

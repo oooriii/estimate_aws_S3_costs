@@ -8,7 +8,7 @@ from rich.table import Table
 
 from cost_model import EstimateResult, ScenarioCosts
 from pricing.schema import PricingConfig, format_money
-from projection import ProjectedTraffic
+from projection import ProjectedTraffic, yearly_forecast_totals
 from report import format_bytes
 
 
@@ -99,6 +99,40 @@ def print_storage_class_comparison(
     )
 
 
+def print_yearly_forecast(
+    console: Console,
+    *,
+    pricing: PricingConfig,
+    base_annual_total: float,
+    growth_rate: float,
+    forecast_years: int,
+) -> None:
+    forecast = yearly_forecast_totals(base_annual_total, growth_rate, forecast_years)
+    if not forecast:
+        return
+
+    rate = pricing.display.usd_eur_rate
+    show_eur = pricing.display.show_eur
+    table = Table(show_header=True, header_style="bold cyan")
+    table.add_column("Year")
+    table.add_column("Annual total (S3 direct)", justify="right")
+
+    for year, total in forecast:
+        table.add_row(str(year), format_money_detailed(total, rate, show_eur))
+
+    console.print(
+        Panel(
+            table,
+            title="[bold]Multi-year forecast (realistic S3 direct)[/bold]",
+            subtitle=(
+                f"Year 1 uses growth-adjusted annual totals ({growth_rate:.0%}/yr); "
+                "later years compound on year 1."
+            ),
+            border_style="cyan",
+        )
+    )
+
+
 def print_estimate_report(
     console: Console,
     *,
@@ -108,12 +142,15 @@ def print_estimate_report(
     result: EstimateResult,
     pricing_warnings: list[str],
     selected_storage_class: str = "STANDARD",
+    growth_rate: float = 0.0,
+    forecast_years: int = 0,
 ) -> None:
     disclaimer = Table(show_header=False, box=None, padding=(0, 2))
     disclaimer.add_column(style="yellow")
     disclaimer.add_row(
         f"Observed period: {traffic.observed_days:.1f} days "
-        f"(scaled ×{traffic.scale_factor:.2f} → 30-day month)."
+        f"(scaled ×{traffic.scale_factor:.2f} → "
+        f"{traffic.target_month_days:.0f}-day month, {traffic.mode} mode)."
     )
     disclaimer.add_row(
         f"Region: {pricing.region} | Pricing date: {pricing.effective_date}"
@@ -122,6 +159,11 @@ def print_estimate_report(
         f"FX: 1 USD = {pricing.display.usd_eur_rate:.4f} EUR (indicative only)."
     )
     disclaimer.add_row(f"Detailed estimate storage class: {selected_storage_class}")
+    if growth_rate > 0:
+        disclaimer.add_row(
+            f"Annual totals assume {growth_rate:.0%}/yr growth on all cost lines; "
+            "monthly figures are the current run rate."
+        )
     disclaimer.add_row("AWS prices change. This is not a billing guarantee.")
 
     console.print(
@@ -176,6 +218,14 @@ def print_estimate_report(
             "[green]Recommendation:[/green] CloudFront saves "
             f"{format_money_detailed(savings, rate)} per month versus S3 direct."
         )
+
+    print_yearly_forecast(
+        console,
+        pricing=pricing,
+        base_annual_total=result.realistic_s3.annual_total,
+        growth_rate=growth_rate,
+        forecast_years=forecast_years,
+    )
 
     for warning in pricing_warnings:
         console.print(f"[yellow]Warning:[/yellow] {warning}")
