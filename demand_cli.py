@@ -98,8 +98,14 @@ def cmd_demand(args: argparse.Namespace) -> int:
         )
 
     if result.stats.total_records == 0:
+        hint = (
+            " No bitstream paths matched (DSpace /bitstream/... URLs). "
+            "Try --all-paths to include other request paths."
+            if bitstreams_only
+            else ""
+        )
         console.print(
-            f"[yellow]Warning:[/yellow] no matching records found in '{args.file}'."
+            f"[yellow]Warning:[/yellow] no matching records found in '{args.file}'.{hint}"
         )
         return 1
 
