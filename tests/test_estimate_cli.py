@@ -45,6 +45,7 @@ def test_cmd_estimate_runs_on_sample_log(sample_log_file, tmp_path):
             "projection_mode": "simple",
             "forecast_years": 0,
             "pdf": None,
+            "show_calculations": False,
         },
     )()
     assert cmd_estimate(args) == 0
@@ -70,6 +71,7 @@ def test_cmd_estimate_with_storage_class_comparison(sample_log_file, tmp_path):
             "projection_mode": "simple",
             "forecast_years": 0,
             "pdf": None,
+            "show_calculations": False,
         },
     )()
     assert cmd_estimate(args) == 0
