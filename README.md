@@ -32,6 +32,38 @@ uv run python main.py analyze 20260615_downloads_ddocs.txt \
 
 The analyze command also reports bot vs human traffic (from user-agent heuristics), top clients by IP and user-agent (with abuse highlighting), and optionally traffic by country. Use `--abuse-top` and `--abuse-min-bytes-pct` to tune the abuse tables.
 
+Export an analysis PDF or a CSV of problematic IPs:
+
+```bash
+uv run python main.py analyze 20260615_downloads_ddocs.txt \
+  --geoip-db /path/to/GeoLite2-Country.mmdb \
+  --pdf reports/traffic-analysis.pdf \
+  --csv-ips reports/problematic-ips.csv
+```
+
+Combined management report (traffic + bots + countries + AWS cost estimate + storage comparison):
+
+```bash
+uv run python main.py report 20260615_downloads_ddocs.txt \
+  --pdf reports/management-report.pdf \
+  --csv-ips reports/problematic-ips.csv \
+  --geoip-db /path/to/GeoLite2-Country.mmdb \
+  --storage-gb 5000 \
+  --items 120000 \
+  --compare-storage-classes \
+  --forecast-years 3
+```
+
+Cost estimate PDF only:
+
+```bash
+uv run python main.py estimate 20260615_downloads_ddocs.txt \
+  --storage-gb 5000 \
+  --items 120000 \
+  --compare-storage-classes \
+  --pdf reports/cost-estimate.pdf
+```
+
 Help:
 
 ```bash
