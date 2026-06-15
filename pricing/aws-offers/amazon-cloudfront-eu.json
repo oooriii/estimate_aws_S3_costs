@@ -1,0 +1,518 @@
+{
+  "formatVersion": "v1.0",
+  "offerCode": "AmazonCloudFront",
+  "version": "20250701211647",
+  "publicationDate": "2025-07-01T21:16:47Z",
+  "products": {
+    "6DSK78RX8E8ZV684": {
+      "sku": "6DSK78RX8E8ZV684",
+      "productFamily": "Request",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "location": "Europe",
+        "locationType": "AWS Edge Location",
+        "usagetype": "EU-Requests-HTTPS-Proxy",
+        "operation": "",
+        "regionCode": "",
+        "requestDescription": "HTTPS DELETE, OPTIONS, PATCH, POST, and PUT requests that CloudFront forwards to your origin",
+        "requestType": "CloudFront-Request-HTTPS-Proxy",
+        "servicename": "Amazon CloudFront"
+      }
+    },
+    "KCJPPWHSYBFKATMS": {
+      "sku": "KCJPPWHSYBFKATMS",
+      "productFamily": "Request",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "location": "EU (Ireland)",
+        "locationType": "AWS Region",
+        "usagetype": "EU-Requests-OriginShield",
+        "operation": "",
+        "regionCode": "eu-west-1",
+        "requestDescription": "Origin Shield Requests",
+        "requestType": "CloudFront-Request-Origin-Shield",
+        "servicename": "Amazon CloudFront"
+      }
+    },
+    "C3HHMR3U9CR9AK63": {
+      "sku": "C3HHMR3U9CR9AK63",
+      "productFamily": "Data Transfer",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "transferType": "CloudFront to Origin",
+        "fromLocation": "Europe",
+        "fromLocationType": "AWS Edge Location",
+        "toLocation": "Data Origin",
+        "toLocationType": "Other",
+        "usagetype": "EU-DataTransfer-Out-OBytes",
+        "operation": "",
+        "fromRegionCode": "",
+        "servicename": "Amazon CloudFront",
+        "toRegionCode": ""
+      }
+    },
+    "9Y9B6NV8MWSGD6RA": {
+      "sku": "9Y9B6NV8MWSGD6RA",
+      "productFamily": "Serverless",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "location": "EU (Ireland)",
+        "locationType": "AWS Region",
+        "group": "AWS-Lambda-Edge-Duration",
+        "groupDescription": "Invocation duration weighted by memory assigned to function, measured in GB-s",
+        "usagetype": "EU-Lambda-Edge-GB-Second",
+        "operation": "",
+        "regionCode": "eu-west-1",
+        "servicename": "Amazon CloudFront"
+      }
+    },
+    "VU3485RNDU6HBQF6": {
+      "sku": "VU3485RNDU6HBQF6",
+      "productFamily": "Data Transfer",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "transferType": "CloudFront Outbound",
+        "fromLocation": "Europe",
+        "fromLocationType": "AWS Edge Location",
+        "toLocation": "External",
+        "toLocationType": "Other",
+        "usagetype": "EU-DataTransfer-Out-Bytes",
+        "operation": "",
+        "fromRegionCode": "",
+        "servicename": "Amazon CloudFront",
+        "toRegionCode": ""
+      }
+    },
+    "YA5QZD7XG45UGHCH": {
+      "sku": "YA5QZD7XG45UGHCH",
+      "productFamily": "Request",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "location": "Europe",
+        "locationType": "AWS Edge Location",
+        "usagetype": "EU-Requests-Tier2-HTTPS",
+        "operation": "",
+        "regionCode": "",
+        "requestDescription": "HTTPS GET and HEAD requests",
+        "requestType": "CloudFront-Request-Tier2",
+        "servicename": "Amazon CloudFront"
+      }
+    },
+    "ZB3BQW3UAPZBVRPZ": {
+      "sku": "ZB3BQW3UAPZBVRPZ",
+      "productFamily": "Serverless",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "location": "EU (Ireland)",
+        "locationType": "AWS Region",
+        "group": "AWS-Lambda-Edge-Requests",
+        "groupDescription": "Invocation call for a Lambda function",
+        "usagetype": "EU-Lambda-Edge-Request",
+        "operation": "",
+        "regionCode": "eu-west-1",
+        "servicename": "Amazon CloudFront"
+      }
+    },
+    "4ENKM5T6A6T9QPD2": {
+      "sku": "4ENKM5T6A6T9QPD2",
+      "productFamily": "Request",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "location": "Europe",
+        "locationType": "AWS Edge Location",
+        "usagetype": "EU-Requests-HTTPS-Proxy-FLE",
+        "operation": "",
+        "regionCode": "",
+        "requestDescription": "HTTPS Proxy requests with Field Level Encryption",
+        "requestType": "CloudFront-Request-HTTPS-Proxy-Field-Level-Encryption",
+        "servicename": "Amazon CloudFront"
+      }
+    },
+    "9MS5ZWGYNFR5NURG": {
+      "sku": "9MS5ZWGYNFR5NURG",
+      "productFamily": "Request",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "location": "Europe",
+        "locationType": "AWS Edge Location",
+        "usagetype": "EU-Requests-Tier1",
+        "operation": "",
+        "regionCode": "",
+        "requestDescription": "HTTP GET and HEAD requests",
+        "requestType": "CloudFront-Request-Tier1",
+        "servicename": "Amazon CloudFront"
+      }
+    },
+    "ZF2VDQR5YB6QU3S2": {
+      "sku": "ZF2VDQR5YB6QU3S2",
+      "productFamily": "Data Transfer",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "transferType": "Origin Shield to origin",
+        "fromLocation": "EU (Ireland)",
+        "fromLocationType": "AWS Region",
+        "toLocation": "Data Origin",
+        "toLocationType": "Other",
+        "usagetype": "EU-OBytes-OriginShield",
+        "operation": "",
+        "fromRegionCode": "eu-west-1",
+        "servicename": "Amazon CloudFront",
+        "toRegionCode": ""
+      }
+    },
+    "S64D2BRSD7CS737T": {
+      "sku": "S64D2BRSD7CS737T",
+      "productFamily": "Data Transfer",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "transferType": "Origin to Origin Shield",
+        "fromLocation": "External",
+        "fromLocationType": "Other",
+        "toLocation": "EU (Ireland)",
+        "toLocationType": "AWS Region",
+        "usagetype": "EU-Bytes-OriginShield",
+        "operation": "",
+        "fromRegionCode": "",
+        "servicename": "Amazon CloudFront",
+        "toRegionCode": "eu-west-1"
+      }
+    },
+    "XD7ZDAECJ2BPHRKJ": {
+      "sku": "XD7ZDAECJ2BPHRKJ",
+      "productFamily": "Request",
+      "attributes": {
+        "servicecode": "AmazonCloudFront",
+        "location": "Europe",
+        "locationType": "AWS Edge Location",
+        "usagetype": "EU-Requests-HTTP-Proxy",
+        "operation": "",
+        "regionCode": "",
+        "requestDescription": "HTTP DELETE, OPTIONS, PATCH, POST, and PUT requests that CloudFront forwards to your origin",
+        "requestType": "CloudFront-Request-HTTP-Proxy",
+        "servicename": "Amazon CloudFront"
+      }
+    }
+  },
+  "terms": {
+    "OnDemand": {
+      "6DSK78RX8E8ZV684": {
+        "6DSK78RX8E8ZV684.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "6DSK78RX8E8ZV684",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "6DSK78RX8E8ZV684.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "6DSK78RX8E8ZV684.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0120 per 10,000 Proxy HTTPS Requests (Europe)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Requests",
+              "pricePerUnit": {
+                "USD": "0.0000012000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "KCJPPWHSYBFKATMS": {
+        "KCJPPWHSYBFKATMS.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "KCJPPWHSYBFKATMS",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "KCJPPWHSYBFKATMS.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "KCJPPWHSYBFKATMS.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.009 per 10,000 Origin Shield Requests",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Requests",
+              "pricePerUnit": {
+                "USD": "0.0000009000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "C3HHMR3U9CR9AK63": {
+        "C3HHMR3U9CR9AK63.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "C3HHMR3U9CR9AK63",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "C3HHMR3U9CR9AK63.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "C3HHMR3U9CR9AK63.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.020 per GB - All data transfer out to Origin (Europe)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0200000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "9Y9B6NV8MWSGD6RA": {
+        "9Y9B6NV8MWSGD6RA.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "9Y9B6NV8MWSGD6RA",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "9Y9B6NV8MWSGD6RA.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "9Y9B6NV8MWSGD6RA.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.00005001 per Lambda-GB-Second for Lambda-Edge-GB-Second in EU (Ireland)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Lambda-GB-Second",
+              "pricePerUnit": {
+                "USD": "0.0000500100"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "VU3485RNDU6HBQF6": {
+        "VU3485RNDU6HBQF6.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "VU3485RNDU6HBQF6",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "VU3485RNDU6HBQF6.JRTCKXETXF.Q3Z75P77EN": {
+              "rateCode": "VU3485RNDU6HBQF6.JRTCKXETXF.Q3Z75P77EN",
+              "description": "$0.085 per GB - first 10 TB / month data transfer out",
+              "beginRange": "0",
+              "endRange": "10240",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0850000000"
+              },
+              "appliesTo": []
+            },
+            "VU3485RNDU6HBQF6.JRTCKXETXF.VF6T3GAUKQ": {
+              "rateCode": "VU3485RNDU6HBQF6.JRTCKXETXF.VF6T3GAUKQ",
+              "description": "$0.080 per GB - next 40 TB / month data transfer out",
+              "beginRange": "10240",
+              "endRange": "51200",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0800000000"
+              },
+              "appliesTo": []
+            },
+            "VU3485RNDU6HBQF6.JRTCKXETXF.N9EW5UVVPA": {
+              "rateCode": "VU3485RNDU6HBQF6.JRTCKXETXF.N9EW5UVVPA",
+              "description": "$0.060 per GB - next 100 TB / month data transfer out",
+              "beginRange": "51200",
+              "endRange": "153600",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0600000000"
+              },
+              "appliesTo": []
+            },
+            "VU3485RNDU6HBQF6.JRTCKXETXF.AZ7GJS7NVF": {
+              "rateCode": "VU3485RNDU6HBQF6.JRTCKXETXF.AZ7GJS7NVF",
+              "description": "$0.040 per GB - next 350 TB / month data transfer out",
+              "beginRange": "153600",
+              "endRange": "512000",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0400000000"
+              },
+              "appliesTo": []
+            },
+            "VU3485RNDU6HBQF6.JRTCKXETXF.3B9CK5AZ6J": {
+              "rateCode": "VU3485RNDU6HBQF6.JRTCKXETXF.3B9CK5AZ6J",
+              "description": "$0.030 per GB - next 524 TB / month data transfer out",
+              "beginRange": "512000",
+              "endRange": "1048576",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0300000000"
+              },
+              "appliesTo": []
+            },
+            "VU3485RNDU6HBQF6.JRTCKXETXF.RBMR72YW69": {
+              "rateCode": "VU3485RNDU6HBQF6.JRTCKXETXF.RBMR72YW69",
+              "description": "$0.025 per GB - next 4 PB / month data transfer out",
+              "beginRange": "1048576",
+              "endRange": "5242880",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0250000000"
+              },
+              "appliesTo": []
+            },
+            "VU3485RNDU6HBQF6.JRTCKXETXF.SW9U2ZKBYX": {
+              "rateCode": "VU3485RNDU6HBQF6.JRTCKXETXF.SW9U2ZKBYX",
+              "description": "$0.020 per GB - data transfer out / month over 5 PB",
+              "beginRange": "5242880",
+              "endRange": "Inf",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0200000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "YA5QZD7XG45UGHCH": {
+        "YA5QZD7XG45UGHCH.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "YA5QZD7XG45UGHCH",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "YA5QZD7XG45UGHCH.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "YA5QZD7XG45UGHCH.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0120 per 10,000 HTTPS Requests",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Requests",
+              "pricePerUnit": {
+                "USD": "0.0000012000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "ZB3BQW3UAPZBVRPZ": {
+        "ZB3BQW3UAPZBVRPZ.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "ZB3BQW3UAPZBVRPZ",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "ZB3BQW3UAPZBVRPZ.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "ZB3BQW3UAPZBVRPZ.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$6.0E-7  per Request for Lambda-Edge-Request in EU (Ireland)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Request",
+              "pricePerUnit": {
+                "USD": "0.0000006000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "4ENKM5T6A6T9QPD2": {
+        "4ENKM5T6A6T9QPD2.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "4ENKM5T6A6T9QPD2",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "4ENKM5T6A6T9QPD2.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "4ENKM5T6A6T9QPD2.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.02 per 10,000 Proxy HTTPS Field Level Encryption Requests (Europe)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Requests",
+              "pricePerUnit": {
+                "USD": "0.0000020000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "9MS5ZWGYNFR5NURG": {
+        "9MS5ZWGYNFR5NURG.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "9MS5ZWGYNFR5NURG",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "9MS5ZWGYNFR5NURG.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "9MS5ZWGYNFR5NURG.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0090 per 10,000 HTTP Requests",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Requests",
+              "pricePerUnit": {
+                "USD": "0.0000009000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "ZF2VDQR5YB6QU3S2": {
+        "ZF2VDQR5YB6QU3S2.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "ZF2VDQR5YB6QU3S2",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "ZF2VDQR5YB6QU3S2.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "ZF2VDQR5YB6QU3S2.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0 per GB - All data transfer out to Origin from Origin Shield",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "S64D2BRSD7CS737T": {
+        "S64D2BRSD7CS737T.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "S64D2BRSD7CS737T",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "S64D2BRSD7CS737T.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "S64D2BRSD7CS737T.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0 per GB - All data transfer into Origin Shield from Origin",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "GB",
+              "pricePerUnit": {
+                "USD": "0.0000000000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      },
+      "XD7ZDAECJ2BPHRKJ": {
+        "XD7ZDAECJ2BPHRKJ.JRTCKXETXF": {
+          "offerTermCode": "JRTCKXETXF",
+          "sku": "XD7ZDAECJ2BPHRKJ",
+          "effectiveDate": "2025-04-01T00:00:00Z",
+          "priceDimensions": {
+            "XD7ZDAECJ2BPHRKJ.JRTCKXETXF.6YS6EN2CT7": {
+              "rateCode": "XD7ZDAECJ2BPHRKJ.JRTCKXETXF.6YS6EN2CT7",
+              "description": "$0.0090 per 10,000 Proxy HTTP Requests (Europe)",
+              "beginRange": "0",
+              "endRange": "Inf",
+              "unit": "Requests",
+              "pricePerUnit": {
+                "USD": "0.0000009000"
+              },
+              "appliesTo": []
+            }
+          },
+          "termAttributes": {}
+        }
+      }
+    }
+  }
+}

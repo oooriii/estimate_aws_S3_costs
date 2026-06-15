@@ -1,0 +1,25 @@
+{
+  "downloaded_at": "2026-06-15T10:41:36.292663+00:00",
+  "sources": {
+    "amazon-s3": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonS3/current/index.json",
+    "amazon-cloudfront": "https://pricing.us-east-1.amazonaws.com/offers/v1.0/aws/AmazonCloudFront/current/index.json"
+  },
+  "files": {
+    "amazon-s3-eu-south-2": {
+      "path": "pricing/aws-offers/amazon-s3-eu-south-2.json",
+      "product_count": 164,
+      "publication_date": "2026-06-12T21:51:01Z"
+    },
+    "amazon-cloudfront": {
+      "path": "pricing/aws-offers/amazon-cloudfront.json",
+      "product_count": 149,
+      "publication_date": "2025-07-01T21:16:47Z"
+    },
+    "amazon-cloudfront-eu": {
+      "path": "pricing/aws-offers/amazon-cloudfront-eu.json",
+      "product_count": 12,
+      "publication_date": "2025-07-01T21:16:47Z"
+    }
+  },
+  "notes": "Filtered S3 offer contains only eu-south-2 SKUs. Full CloudFront offer is stored unfiltered. CloudFront EU file keeps usagetype prefixes starting with EU-."
+}

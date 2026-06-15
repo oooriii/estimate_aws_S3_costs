@@ -10,6 +10,7 @@ from rich.prompt import Confirm, FloatPrompt, Prompt
 from rich.table import Table
 
 from pricing.defaults import EU_SOUTH_2_DEFAULTS
+from pricing.aws_offers import download_offers
 from pricing.loader import load_pricing_config, save_pricing_config
 from pricing.schema import (
     DEFAULT_USD_EUR_RATE,
@@ -291,6 +292,42 @@ def cmd_pricing_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pricing_download_offers(args: argparse.Namespace) -> int:
+    console = Console()
+    try:
+        results = download_offers()
+    except OSError as exc:
+        console.print(f"[red]Error:[/red] failed to download AWS offers: {exc}")
+        return 1
+
+    table = Table(show_header=True, box=None, padding=(0, 2))
+    table.add_column("File", style="bold cyan")
+    table.add_column("Products", justify="right")
+    table.add_column("Publication date")
+
+    for result in results:
+        if result.name == "manifest":
+            continue
+        table.add_row(
+            result.name,
+            str(result.product_count),
+            result.publication_date or "—",
+        )
+
+    console.print(
+        Panel(
+            table,
+            title="[bold]Cached AWS offer files[/bold]",
+            border_style="green",
+        )
+    )
+    console.print(
+        "Files saved under [bold]pricing/aws-offers/[/bold]. "
+        "Re-run this command periodically to refresh AWS prices."
+    )
+    return 0
+
+
 def register_pricing_commands(subparsers: argparse._SubParsersAction) -> None:
     pricing = subparsers.add_parser("pricing", help="Manage AWS pricing JSON files")
     pricing_sub = pricing.add_subparsers(dest="pricing_command", required=True)
@@ -316,3 +353,9 @@ def register_pricing_commands(subparsers: argparse._SubParsersAction) -> None:
     validate = pricing_sub.add_parser("validate", help="Validate a pricing JSON file")
     validate.add_argument("file", type=Path, help="Pricing JSON file")
     validate.set_defaults(func=cmd_pricing_validate)
+
+    download_offers_cmd = pricing_sub.add_parser(
+        "download-offers",
+        help="Download and cache AWS public price list JSON files",
+    )
+    download_offers_cmd.set_defaults(func=cmd_pricing_download_offers)
