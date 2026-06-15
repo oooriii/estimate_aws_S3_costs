@@ -1,12 +1,16 @@
-from defaults import default_report_paths, discover_geoip_db
+from defaults import (
+    DEFAULT_REPORT_CSV_NAME,
+    DEFAULT_REPORT_PDF_NAME,
+    default_report_paths,
+    discover_geoip_db,
+)
 from report_cli import resolve_report_outputs
 
 
 def test_default_report_paths(tmp_path):
-    log_file = tmp_path / "20260615_downloads.log"
-    pdf_path, csv_path = default_report_paths(log_file, output_dir=tmp_path / "reports")
-    assert pdf_path == tmp_path / "reports" / "20260615_downloads-report.pdf"
-    assert csv_path == tmp_path / "reports" / "20260615_downloads-ips.csv"
+    pdf_path, csv_path = default_report_paths(output_dir=tmp_path / "reports")
+    assert pdf_path == tmp_path / "reports" / DEFAULT_REPORT_PDF_NAME
+    assert csv_path == tmp_path / "reports" / DEFAULT_REPORT_CSV_NAME
 
 
 def test_resolve_report_outputs_uses_defaults(tmp_path):
@@ -24,8 +28,8 @@ def test_resolve_report_outputs_uses_defaults(tmp_path):
         },
     )()
     pdf_path, csv_path = resolve_report_outputs(args)
-    assert pdf_path == tmp_path / "out" / "sample-report.pdf"
-    assert csv_path == tmp_path / "out" / "sample-ips.csv"
+    assert pdf_path == tmp_path / "out" / DEFAULT_REPORT_PDF_NAME
+    assert csv_path == tmp_path / "out" / DEFAULT_REPORT_CSV_NAME
 
 
 def test_discover_geoip_db_finds_single_match(tmp_path):

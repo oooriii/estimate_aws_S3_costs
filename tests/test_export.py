@@ -3,7 +3,7 @@ from pathlib import Path
 
 from abuse import IpTraffic
 from export_csv import filter_problematic_ips, write_problematic_ips_csv
-from pdf_report import EstimatePdfContext, write_analyze_pdf, write_combined_pdf
+from pdf_report import EstimatePdfContext, _format_money_pdf, write_analyze_pdf, write_combined_pdf
 
 
 def _ip(remote_host: str, records: int, size: int) -> IpTraffic:
@@ -52,6 +52,10 @@ def test_write_problematic_ips_csv(tmp_path):
     assert rows[0]["ip"] == "1.1.1.1"
     assert rows[0]["abusive"] == "yes"
     assert rows[0]["country_code"] == "US"
+
+
+def test_format_money_pdf_includes_eur():
+    assert _format_money_pdf(18.85, 0.92) == "USD 18.85 (EUR 17.34)"
 
 
 def test_write_analyze_pdf_creates_pdf(tmp_path, sample_log_file):
