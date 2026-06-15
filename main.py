@@ -7,6 +7,7 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 from abuse import parse_log
 from estimate_cli import register_estimate_command
+from demand_cli import register_demand_command
 from export_csv import write_problematic_ips_csv
 from geo import MaxMindGeoIpResolver, open_geoip_resolver
 from pdf_report import write_analyze_pdf
@@ -202,6 +203,7 @@ def build_parser() -> argparse.ArgumentParser:
     analyze.set_defaults(func=cmd_analyze)
 
     register_report_command(subparsers)
+    register_demand_command(subparsers)
     register_pricing_commands(subparsers)
     register_estimate_command(subparsers)
 

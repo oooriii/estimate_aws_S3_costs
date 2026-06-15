@@ -11,6 +11,7 @@ from fpdf.enums import XPos, YPos
 from abuse import AnalysisResult, top_items
 from bots import BOT_CATEGORY_LABELS
 from cost_model import EstimateResult, ScenarioCosts
+from demand import FileDemandResult
 from estimate_report import scenario_calculation_lines
 from geo import top_countries
 from parser import TrafficStats
@@ -49,6 +50,26 @@ def write_analyze_pdf(
     _add_user_agent_section(builder, result, abuse_top, abuse_min_bytes_pct)
     if result.countries is not None:
         _add_country_section(builder, result, countries_top)
+    builder.save(path)
+
+
+def write_demand_pdf(
+    path: Path,
+    *,
+    log_file: Path,
+    result: FileDemandResult,
+    top: int = 25,
+    bitstreams_only: bool = True,
+    title: str = "File demand report",
+) -> None:
+    builder = _PdfBuilder(title=title, subtitle=str(log_file))
+    _add_demand_sections(
+        builder,
+        log_file=log_file,
+        result=result,
+        top=top,
+        bitstreams_only=bitstreams_only,
+    )
     builder.save(path)
 
 
@@ -229,6 +250,78 @@ def _add_traffic_summary(
             ("Records", f"{stats.total_records:,}"),
             ("Bytes downloaded", format_bytes(stats.total_bytes)),
         )
+    )
+
+
+def _format_share_pct(part: int, total: int) -> str:
+    if total <= 0:
+        return "0.0%"
+    return f"{100.0 * part / total:.1f}%"
+
+
+def _truncate_pdf(text: str, limit: int = 72) -> str:
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1] + "..."
+
+
+def _add_demand_sections(
+    builder: _PdfBuilder,
+    *,
+    log_file: Path,
+    result: FileDemandResult,
+    top: int,
+    bitstreams_only: bool,
+) -> None:
+    stats = result.stats
+    _add_traffic_summary(builder, log_file, stats)
+
+    builder.add_section("File demand summary")
+    summary_rows: list[tuple[str, str]] = [
+        ("Unique paths", f"{len(result.files):,}"),
+        ("Bitstream downloads", f"{result.bitstream_records:,}"),
+    ]
+    if not bitstreams_only:
+        summary_rows.append(("Other paths", f"{result.other_records:,}"))
+    builder.add_key_values(tuple(summary_rows))
+
+    rows = top_items(result.files, limit=top)
+    builder.add_section(
+        "Top demanded files",
+        subtitle=(
+            "DSpace bitstream URLs normalized to one path per document."
+            if bitstreams_only
+            else "All request paths; bitstreams normalized when possible."
+        ),
+    )
+    table_rows = tuple(
+        (
+            str(index),
+            _truncate_pdf(item.path, limit=52),
+            item.item_id or "-",
+            f"{item.records:,}",
+            _format_share_pct(item.records, stats.total_records),
+            format_bytes(item.bytes),
+            _format_share_pct(item.bytes, stats.total_bytes),
+            str(item.unique_ips),
+            f"{item.bot_records:,}",
+        )
+        for index, item in enumerate(rows, start=1)
+    )
+    builder.add_table(
+        (
+            "#",
+            "Path",
+            "Item",
+            "Records",
+            "% rec.",
+            "Bytes",
+            "% bytes",
+            "IPs",
+            "Bot rec.",
+        ),
+        table_rows,
+        col_widths=(8, 58, 22, 16, 14, 18, 14, 10, 14),
     )
 
 
