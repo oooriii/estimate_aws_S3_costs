@@ -11,6 +11,7 @@ from rich.table import Table
 
 from pricing.defaults import EU_SOUTH_2_DEFAULTS
 from pricing.aws_offers import download_offers
+from pricing.generate import PricingGenerationError, generate_pricing_config
 from pricing.loader import load_pricing_config, save_pricing_config
 from pricing.schema import (
     DEFAULT_USD_EUR_RATE,
@@ -328,6 +329,48 @@ def cmd_pricing_download_offers(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pricing_generate(args: argparse.Namespace) -> int:
+    console = Console()
+
+    if args.output.exists() and not args.force:
+        console.print(
+            f"[red]Error:[/red] '{args.output}' already exists. Use --force to overwrite."
+        )
+        return 1
+
+    if args.download:
+        try:
+            download_offers()
+        except OSError as exc:
+            console.print(f"[red]Error:[/red] failed to download AWS offers: {exc}")
+            return 1
+
+    try:
+        config, warnings = generate_pricing_config(
+            region=args.region,
+            usd_eur_rate=args.eur_rate,
+            include_cloudfront=not args.no_cloudfront,
+        )
+    except (PricingGenerationError, FileNotFoundError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        console.print(
+            "Run [bold]uv run python main.py pricing download-offers[/bold] first, "
+            "or pass [bold]--download[/bold]."
+        )
+        return 1
+
+    if args.eur_rate == DEFAULT_USD_EUR_RATE:
+        warnings.append(DEFAULT_USD_EUR_RATE_WARNING)
+
+    save_pricing_config(args.output, config)
+    print_pricing_summary(console, config)
+    for warning in warnings:
+        console.print(f"[yellow]Warning:[/yellow] {warning}")
+
+    console.print(f"[green]Generated[/green] pricing config at {args.output}")
+    return 0
+
+
 def register_pricing_commands(subparsers: argparse._SubParsersAction) -> None:
     pricing = subparsers.add_parser("pricing", help="Manage AWS pricing JSON files")
     pricing_sub = pricing.add_subparsers(dest="pricing_command", required=True)
@@ -359,3 +402,41 @@ def register_pricing_commands(subparsers: argparse._SubParsersAction) -> None:
         help="Download and cache AWS public price list JSON files",
     )
     download_offers_cmd.set_defaults(func=cmd_pricing_download_offers)
+
+    generate = pricing_sub.add_parser(
+        "generate",
+        help="Generate pricing JSON from cached AWS offer files",
+    )
+    generate.add_argument(
+        "--output",
+        type=Path,
+        default=Path("pricing/eu-south-2.json"),
+        help="Output pricing JSON path",
+    )
+    generate.add_argument(
+        "--region",
+        default="eu-south-2",
+        help="AWS region for the generated pricing file",
+    )
+    generate.add_argument(
+        "--eur-rate",
+        type=float,
+        default=DEFAULT_USD_EUR_RATE,
+        help="USD/EUR exchange rate stored in the pricing file",
+    )
+    generate.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the output file if it already exists",
+    )
+    generate.add_argument(
+        "--download",
+        action="store_true",
+        help="Download AWS offers before generating",
+    )
+    generate.add_argument(
+        "--no-cloudfront",
+        action="store_true",
+        help="Generate S3 pricing only",
+    )
+    generate.set_defaults(func=cmd_pricing_generate)
