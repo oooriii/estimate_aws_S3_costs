@@ -1,0 +1,82 @@
+name: Update AWS pricing
+
+on:
+  schedule:
+    # 06:00 UTC on the 1st of January, April, July, and October
+    - cron: "0 6 1 1,4,7,10 *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-aws-pricing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Download AWS offer cache
+        run: uv run python main.py pricing download-offers
+
+      - name: Regenerate reference pricing template
+        run: >
+          uv run python main.py pricing generate
+          --output pricing/templates/eu-south-2.json
+          --force
+
+      - name: Create pull request if pricing data changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- pricing/aws-offers pricing/templates/eu-south-2.json; then
+            echo "No AWS pricing changes detected. Skipping pull request."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="chore/aws-pricing-$(date -u +%Y%m%d)"
+          git checkout -b "$BRANCH"
+          git add pricing/aws-offers pricing/templates/eu-south-2.json
+          git commit -m "$(cat <<'EOF'
+chore: refresh AWS pricing cache from public offer API
+
+Update cached eu-south-2 S3 and CloudFront offer snapshots and regenerate the reference pricing template.
+EOF
+)"
+          git push --set-upstream origin "$BRANCH"
+
+          gh pr create \
+            --title "chore: refresh AWS pricing cache ($(date -u +%Y-%m-%d))" \
+            --body "$(cat <<'EOF'
+## Summary
+
+- Refresh `pricing/aws-offers/` from the AWS public Price List API
+- Regenerate `pricing/templates/eu-south-2.json` from the updated cache
+
+## Notes
+
+- `pricing/eu-south-2.json` is **not** modified by this workflow
+- Review price changes before merging, then regenerate your local config if needed:
+
+```bash
+uv run python main.py pricing generate --output pricing/eu-south-2.json --force
+```
+EOF
+)"
