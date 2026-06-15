@@ -1,6 +1,14 @@
+import argparse
 import re
+import sys
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
+
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
+from rich.table import Table
 
 LOG_HEADER_RE = re.compile(
     r"^(?P<log_file>/var/log/apache2/\S+?):"
@@ -68,7 +76,17 @@ class FileStats:
     total_bytes: int
 
 
-def parse_file(file_path: str) -> FileStats:
+def format_bytes(size: int) -> str:
+    units = ("B", "KB", "MB", "GB", "TB")
+    value = float(size)
+    for unit in units:
+        if value < 1024 or unit == units[-1]:
+            return f"{value:,.2f} {unit}" if unit != "B" else f"{int(value):,} B"
+        value /= 1024
+    return f"{size:,} B"
+
+
+def parse_file(file_path: Path, progress: Progress | None = None) -> FileStats:
     """
     Parseja un fitxer en format de log Apache i retorna estadístiques agregades:
     data mínima i màxima, nombre total de registres i bytes descarregats.
@@ -78,7 +96,11 @@ def parse_file(file_path: str) -> FileStats:
     total_records = 0
     total_bytes = 0
 
-    with open(file_path, encoding="utf-8") as file:
+    task_id = None
+    if progress is not None:
+        task_id = progress.add_task("Parsejant log...", total=None)
+
+    with file_path.open(encoding="utf-8") as file:
         for line in file:
             log_line = LogLine.from_line(line)
             if log_line is None:
@@ -92,6 +114,9 @@ def parse_file(file_path: str) -> FileStats:
             if max_date is None or log_line.timestamp > max_date:
                 max_date = log_line.timestamp
 
+            if progress is not None and task_id is not None:
+                progress.update(task_id, completed=total_records)
+
     return FileStats(
         min_date=min_date,
         max_date=max_date,
@@ -100,13 +125,61 @@ def parse_file(file_path: str) -> FileStats:
     )
 
 
-def main() -> None:
-    stats = parse_file("20260615_downloads_ddocs.txt")
-    print(f"Data mínima: {stats.min_date}")
-    print(f"Data màxima: {stats.max_date}")
-    print(f"Registres: {stats.total_records}")
-    print(f"Bytes descarregats: {stats.total_bytes}")
+def print_stats(console: Console, file_path: Path, stats: FileStats) -> None:
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    table.add_column("Camp", style="bold cyan")
+    table.add_column("Valor")
+
+    table.add_row("Fitxer", str(file_path))
+    table.add_row("Data mínima", str(stats.min_date) if stats.min_date else "—")
+    table.add_row("Data màxima", str(stats.max_date) if stats.max_date else "—")
+    table.add_row("Registres", f"{stats.total_records:,}")
+    table.add_row("Bytes descarregats", format_bytes(stats.total_bytes))
+
+    console.print(
+        Panel(table, title="[bold]Resultats de l'estudi[/bold]", border_style="green")
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Analitza fitxers de log Apache i calcula estadístiques de descàrrega.",
+    )
+    parser.add_argument(
+        "file",
+        type=Path,
+        help="Fitxer de log d'entrada",
+    )
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    console = Console()
+    args = build_parser().parse_args(argv)
+
+    if not args.file.is_file():
+        console.print(f"[red]Error:[/red] el fitxer '{args.file}' no existeix.")
+        return 1
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(bar_width=40),
+        TextColumn("{task.completed:,} registres"),
+        console=console,
+        transient=True,
+    ) as progress:
+        stats = parse_file(args.file, progress=progress)
+
+    if stats.total_records == 0:
+        console.print(
+            f"[yellow]Avís:[/yellow] no s'ha trobat cap registre vàlid a '{args.file}'."
+        )
+        return 1
+
+    print_stats(console, args.file, stats)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
