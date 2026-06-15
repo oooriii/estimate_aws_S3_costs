@@ -45,9 +45,24 @@ uv run python main.py pricing show pricing/eu-south-2.json
 uv run python main.py pricing validate pricing/eu-south-2.json
 ```
 
+Refresh cached AWS public price list files (stored under `pricing/aws-offers/`):
+
+```bash
+uv run python main.py pricing download-offers
+```
+
+Cached files:
+
+| File | Contents |
+|------|----------|
+| `amazon-s3-eu-south-2.json` | S3 offer filtered to region `eu-south-2` (~150 KB) |
+| `amazon-cloudfront.json` | Full CloudFront offer (~220 KB) |
+| `amazon-cloudfront-eu.json` | CloudFront SKUs with `EU-*` usage types |
+| `manifest.json` | Download timestamp and source URLs |
+
 AWS prices are stored in **USD** (how AWS bills). The wizard also asks for a **USD/EUR rate** to display indicative EUR amounts. The default rate is `0.92` and triggers a warning — update it to match current exchange rates.
 
-A starter template is available at `pricing/templates/eu-south-2.json` for reference; use `pricing init` to create a validated config file.
+A starter template is available at `pricing/templates/eu-south-2.json` for reference; use `pricing init` to create a validated config file. Use `pricing download-offers` to refresh the cached AWS JSON files when AWS updates prices.
 
 ### Output
 
