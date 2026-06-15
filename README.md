@@ -17,7 +17,7 @@ uv sync
 
 ## Usage
 
-Pass the log file as an argument:
+### Analyze logs
 
 ```bash
 uv run python main.py analyze 20260615_downloads_ddocs.txt
@@ -27,7 +27,27 @@ Help:
 
 ```bash
 uv run python main.py --help
+uv run python main.py analyze --help
 ```
+
+### Pricing configuration
+
+Create a pricing JSON file for region `eu-south-2` (interactive wizard with validated prompts):
+
+```bash
+uv run python main.py pricing init --output pricing/eu-south-2.json
+```
+
+Show or validate an existing file:
+
+```bash
+uv run python main.py pricing show pricing/eu-south-2.json
+uv run python main.py pricing validate pricing/eu-south-2.json
+```
+
+AWS prices are stored in **USD** (how AWS bills). The wizard also asks for a **USD/EUR rate** to display indicative EUR amounts. The default rate is `0.92` and triggers a warning — update it to match current exchange rates.
+
+A starter template is available at `pricing/templates/eu-south-2.json` for reference; use `pricing init` to create a validated config file.
 
 ### Output
 
@@ -38,6 +58,7 @@ The tool displays a panel with:
 | **File** | Path to the analyzed file |
 | **Min date** | Timestamp of the oldest record |
 | **Max date** | Timestamp of the newest record |
+| **Observed days** | Length of the sampled period |
 | **Records** | Total number of valid parsed lines |
 | **Bytes downloaded** | Sum of transferred bytes (human-readable: KB, MB, GB, etc.) |
 
@@ -100,6 +121,13 @@ Input log files (`20260615_downloads_*.txt`) are excluded from version control v
 - **File size** — extracted log files can be very large.
 
 Generate them on the server (see above) and keep them local to run the analysis.
+
+## Tests
+
+```bash
+uv sync --group dev
+uv run pytest
+```
 
 ## License
 
