@@ -46,7 +46,9 @@ Options:
 |------|-------------|
 | `--storage-gb` | Total stored data volume in GB (required) |
 | `--items` | Number of stored objects, used for Intelligent-Tiering monitoring (required) |
-| `--growth` | Annual growth rate, e.g. `10%` or `0.1` (default: `10%`; reserved for future multi-year projections) |
+| `--growth` | Annual growth rate applied to annual totals (default: `10%`) |
+| `--projection-mode` | `simple` (30-day month, default) or `calendar` (days in log month) |
+| `--forecast-years` | Multi-year forecast table for realistic S3 (0 = hide) |
 | `--pricing` | Pricing JSON file (default: `pricing/eu-south-2.json`) |
 | `--storage-class` | `STANDARD`, `STANDARD_IA`, `INTELLIGENT_TIERING`, or `GLACIER_INSTANT` (detailed estimate) |
 | `--compare-storage-classes` | Compare S3 direct costs across classes (comma-separated, or omit value to compare all) |
@@ -58,6 +60,14 @@ uv run python main.py estimate 20260615_downloads_ddocs.txt \
   --storage-gb 5000 \
   --items 120000 \
   --compare-storage-classes STANDARD,INTELLIGENT_TIERING,GLACIER_INSTANT
+```
+
+```bash
+uv run python main.py estimate 20260615_downloads_ddocs.txt \
+  --storage-gb 5000 \
+  --items 120000 \
+  --projection-mode calendar \
+  --forecast-years 3
 ```
 
 The report shows:
