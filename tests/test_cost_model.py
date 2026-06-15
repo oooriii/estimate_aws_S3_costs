@@ -17,7 +17,7 @@ from pricing.schema import (
     PricingConfig,
     S3Pricing,
 )
-from projection import project_traffic
+from projection import compound_annual_factor, project_traffic
 
 
 @pytest.fixture
@@ -77,7 +77,7 @@ def test_calculate_s3_direct_includes_storage_and_transfer(pricing_config):
     )
 
     assert scenario.monthly_total > 0
-    assert scenario.monthly_total == pytest.approx(scenario.annual_total / 12.0)
+    assert scenario.annual_total == pytest.approx(scenario.monthly_total * 12.0)
     assert any(line.label == "Storage" for line in scenario.monthly)
     assert any(line.label == "Data transfer out" for line in scenario.monthly)
 
@@ -132,3 +132,19 @@ def test_compare_storage_classes_glacier_is_cheapest_storage(
     by_name = {item.name: item for item in comparisons}
 
     assert by_name["GLACIER_INSTANT"].monthly_total < by_name["STANDARD"].monthly_total
+
+
+def test_growth_increases_annual_total(pricing_config):
+    inventory = Inventory(storage_gb=1000, items=10_000, annual_growth_rate=0.10)
+    scenario = calculate_s3_direct(
+        traffic_monthly_requests=10_000,
+        traffic_monthly_bytes=100 * 1024**3,
+        inventory=inventory,
+        pricing=pricing_config,
+        storage_class="STANDARD",
+    )
+
+    assert scenario.annual_total > scenario.monthly_total * 12.0
+    assert scenario.annual_total == pytest.approx(
+        scenario.monthly_total * compound_annual_factor(0.10)
+    )
