@@ -48,13 +48,24 @@ Options:
 | `--items` | Number of stored objects, used for Intelligent-Tiering monitoring (required) |
 | `--growth` | Annual growth rate, e.g. `10%` or `0.1` (default: `10%`; reserved for future multi-year projections) |
 | `--pricing` | Pricing JSON file (default: `pricing/eu-south-2.json`) |
-| `--storage-class` | `STANDARD`, `STANDARD_IA`, `INTELLIGENT_TIERING`, or `GLACIER_INSTANT` |
+| `--storage-class` | `STANDARD`, `STANDARD_IA`, `INTELLIGENT_TIERING`, or `GLACIER_INSTANT` (detailed estimate) |
+| `--compare-storage-classes` | Compare S3 direct costs across classes (comma-separated, or omit value to compare all) |
+
+Compare storage classes (egress and GET costs are the same; only storage and IT monitoring differ):
+
+```bash
+uv run python main.py estimate 20260615_downloads_ddocs.txt \
+  --storage-gb 5000 \
+  --items 120000 \
+  --compare-storage-classes STANDARD,INTELLIGENT_TIERING,GLACIER_INSTANT
+```
 
 The report shows:
 
 - **Realistic S3 direct** — tiered egress, observed traffic scaled to 30 days
 - **Realistic S3 + CloudFront** — recommended cache hit ratio from pricing config
 - **Conservative worst case** — +20% traffic, first-tier egress only, CloudFront at 0% cache hit; picks the higher annual total between S3 direct and CloudFront
+- **Storage class comparison** (with `--compare-storage-classes`) — side-by-side monthly/annual totals for S3 direct
 
 Amounts are shown in USD with indicative EUR (from the pricing file's `display.usd_eur_rate`). This is an estimate, not a billing guarantee.
 
