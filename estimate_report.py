@@ -8,7 +8,7 @@ from rich.table import Table
 
 from cost_model import EstimateResult, ScenarioCosts
 from pricing.schema import PricingConfig, format_money
-from projection import ProjectedTraffic, yearly_forecast_totals
+from projection import ProjectedTraffic, compound_annual_factor, yearly_forecast_totals
 from report import format_bytes
 
 
@@ -25,6 +25,9 @@ def _print_scenario_table(
     scenario: ScenarioCosts,
     pricing: PricingConfig,
     period: str,
+    *,
+    show_calculations: bool = False,
+    growth_rate: float = 0.0,
 ) -> None:
     lines = scenario.monthly if period == "monthly" else scenario.annual
     total = scenario.monthly_total if period == "monthly" else scenario.annual_total
@@ -54,6 +57,59 @@ def _print_scenario_table(
         )
     )
 
+    if show_calculations:
+        print_scenario_calculations(
+            console,
+            scenario,
+            period=period,
+            growth_rate=growth_rate,
+        )
+
+
+def scenario_calculation_lines(
+    scenario: ScenarioCosts,
+    *,
+    period: str,
+    growth_rate: float = 0.0,
+) -> tuple[str, ...]:
+    lines = scenario.monthly if period == "monthly" else scenario.annual
+    out: list[str] = []
+    for line in lines:
+        out.append(f"{line.label}:")
+        if line.calculation:
+            out.extend(f"  {step}" for step in line.calculation)
+        else:
+            out.append(f"  {line.usd:.2f} USD")
+    out.append(
+        scenario.total_calculation(period=period, growth_rate=growth_rate),
+    )
+    if period == "annual" and growth_rate > 0:
+        factor = compound_annual_factor(growth_rate)
+        out.append(
+            f"Annual factor = {factor:.4f} "
+            f"(sum of monthly growth over 12 months at {growth_rate:.0%}/yr)"
+        )
+    return tuple(out)
+
+
+def print_scenario_calculations(
+    console: Console,
+    scenario: ScenarioCosts,
+    *,
+    period: str,
+    growth_rate: float = 0.0,
+) -> None:
+    console.print(
+        f"[bold cyan]Show calculations[/bold cyan] — {scenario.name} ({period})"
+    )
+    for item in scenario_calculation_lines(
+        scenario,
+        period=period,
+        growth_rate=growth_rate,
+    ):
+        console.print(f"  [dim]{item}[/dim]")
+    console.print()
+
 
 def print_storage_class_comparison(
     console: Console,
@@ -61,6 +117,7 @@ def print_storage_class_comparison(
     pricing: PricingConfig,
     comparisons: tuple[ScenarioCosts, ...],
     selected_storage_class: str,
+    show_calculations: bool = False,
 ) -> None:
     rate = pricing.display.usd_eur_rate
     show_eur = pricing.display.show_eur
@@ -97,6 +154,25 @@ def print_storage_class_comparison(
             border_style="magenta",
         )
     )
+
+    if show_calculations:
+        console.print(
+            "[bold cyan]Show calculations[/bold cyan] — storage class comparison "
+            "(storage and monitoring only; GET/egress identical across classes)"
+        )
+        for scenario in sorted_comparisons:
+            storage_lines = tuple(
+                line
+                for line in scenario.monthly
+                if line.label in {"Storage", "Intelligent-Tiering monitoring"}
+            )
+            if not storage_lines:
+                continue
+            console.print(f"  [bold]{scenario.name}[/bold]")
+            for line in storage_lines:
+                for step in line.calculation:
+                    console.print(f"    [dim]{step}[/dim]")
+        console.print()
 
 
 def print_yearly_forecast(
@@ -144,6 +220,7 @@ def print_estimate_report(
     selected_storage_class: str = "STANDARD",
     growth_rate: float = 0.0,
     forecast_years: int = 0,
+    show_calculations: bool = False,
 ) -> None:
     disclaimer = Table(show_header=False, box=None, padding=(0, 2))
     disclaimer.add_column(style="yellow")
@@ -198,14 +275,56 @@ def print_estimate_report(
         )
     )
 
-    _print_scenario_table(console, result.realistic_s3, pricing, "monthly")
-    _print_scenario_table(console, result.realistic_s3, pricing, "annual")
+    _print_scenario_table(
+        console,
+        result.realistic_s3,
+        pricing,
+        "monthly",
+        show_calculations=show_calculations,
+        growth_rate=growth_rate,
+    )
+    _print_scenario_table(
+        console,
+        result.realistic_s3,
+        pricing,
+        "annual",
+        show_calculations=show_calculations,
+        growth_rate=growth_rate,
+    )
     if result.realistic_cloudfront is not None:
-        _print_scenario_table(console, result.realistic_cloudfront, pricing, "monthly")
-        _print_scenario_table(console, result.realistic_cloudfront, pricing, "annual")
+        _print_scenario_table(
+            console,
+            result.realistic_cloudfront,
+            pricing,
+            "monthly",
+            show_calculations=show_calculations,
+            growth_rate=growth_rate,
+        )
+        _print_scenario_table(
+            console,
+            result.realistic_cloudfront,
+            pricing,
+            "annual",
+            show_calculations=show_calculations,
+            growth_rate=growth_rate,
+        )
 
-    _print_scenario_table(console, result.conservative, pricing, "monthly")
-    _print_scenario_table(console, result.conservative, pricing, "annual")
+    _print_scenario_table(
+        console,
+        result.conservative,
+        pricing,
+        "monthly",
+        show_calculations=show_calculations,
+        growth_rate=growth_rate,
+    )
+    _print_scenario_table(
+        console,
+        result.conservative,
+        pricing,
+        "annual",
+        show_calculations=show_calculations,
+        growth_rate=growth_rate,
+    )
 
     rate = pricing.display.usd_eur_rate
     savings = result.realistic_s3.monthly_total - (

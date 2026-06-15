@@ -11,6 +11,7 @@ from fpdf.enums import XPos, YPos
 from abuse import AnalysisResult, top_items
 from bots import BOT_CATEGORY_LABELS
 from cost_model import EstimateResult, ScenarioCosts
+from estimate_report import scenario_calculation_lines
 from geo import top_countries
 from parser import TrafficStats
 from pricing.schema import PricingConfig
@@ -28,6 +29,7 @@ class EstimatePdfContext:
     forecast_years: int
     storage_comparisons: tuple[ScenarioCosts, ...] | None = None
     pricing_warnings: tuple[str, ...] = ()
+    show_calculations: bool = False
 
 
 def write_analyze_pdf(
@@ -197,6 +199,15 @@ class _PdfBuilder:
         for item in items:
             self.pdf.set_x(self.pdf.l_margin)
             self.pdf.multi_cell(self.pdf.epw, 5, _pdf_text(f"- {item}"))
+
+    def add_calculation_block(self, lines: tuple[str, ...]) -> None:
+        self.pdf.set_font("Helvetica", "", 8)
+        for line in lines:
+            if self.pdf.get_y() > 275:
+                self.pdf.add_page()
+            self.pdf.set_x(self.pdf.l_margin)
+            self.pdf.multi_cell(self.pdf.epw, 4.5, _pdf_text(line))
+        self.pdf.ln(2)
 
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -380,7 +391,21 @@ def _add_estimate_sections(
     )
 
     _add_scenario_table(builder, result.realistic_s3, pricing, "monthly")
+    if context.show_calculations:
+        _add_scenario_calculations(
+            builder,
+            result.realistic_s3,
+            period="monthly",
+            growth_rate=context.growth_rate,
+        )
     _add_scenario_table(builder, result.realistic_s3, pricing, "annual")
+    if context.show_calculations:
+        _add_scenario_calculations(
+            builder,
+            result.realistic_s3,
+            period="annual",
+            growth_rate=context.growth_rate,
+        )
     if result.realistic_cloudfront is not None:
         _add_scenario_table(builder, result.realistic_cloudfront, pricing, "monthly")
         _add_scenario_table(builder, result.realistic_cloudfront, pricing, "annual")
@@ -389,6 +414,8 @@ def _add_estimate_sections(
 
     if context.storage_comparisons:
         _add_storage_comparison(builder, context, pricing)
+        if context.show_calculations:
+            _add_storage_comparison_calculations(builder, context)
 
     if context.forecast_years > 0:
         _add_forecast(builder, context, pricing)
@@ -413,6 +440,44 @@ def _add_scenario_table(
     ) + (("Total", _format_money_pdf(total, rate, show_eur)),)
     builder.add_section(f"{scenario.name} - {period}")
     builder.add_table(("Component", "Cost"), rows, col_widths=(120, 70))
+
+
+def _add_scenario_calculations(
+    builder: _PdfBuilder,
+    scenario: ScenarioCosts,
+    *,
+    period: str,
+    growth_rate: float,
+) -> None:
+    builder.add_section(f"Show calculations — {scenario.name} ({period})")
+    builder.add_calculation_block(
+        scenario_calculation_lines(
+            scenario,
+            period=period,
+            growth_rate=growth_rate,
+        )
+    )
+
+
+def _add_storage_comparison_calculations(
+    builder: _PdfBuilder,
+    context: EstimatePdfContext,
+) -> None:
+    comparisons = context.storage_comparisons
+    if not comparisons:
+        return
+    lines: list[str] = [
+        "Storage and monitoring only; GET and egress are identical across classes.",
+    ]
+    for scenario in sorted(comparisons, key=lambda item: item.monthly_total):
+        lines.append(f"{scenario.name}:")
+        for line in scenario.monthly:
+            if line.label not in {"Storage", "Intelligent-Tiering monitoring"}:
+                continue
+            for step in line.calculation:
+                lines.append(f"  {step}")
+    builder.add_section("Show calculations — storage class comparison")
+    builder.add_calculation_block(tuple(lines))
 
 
 def _add_storage_comparison(

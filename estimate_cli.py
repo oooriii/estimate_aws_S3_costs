@@ -100,6 +100,11 @@ def register_estimate_command(subparsers: argparse._SubParsersAction) -> None:
         metavar="PATH",
         help="Write a cost estimate PDF report to this path",
     )
+    estimate.add_argument(
+        "--show-calculations",
+        action="store_true",
+        help="Print step-by-step cost formulas (AWS calculator style)",
+    )
     estimate.set_defaults(func=cmd_estimate)
 
 
@@ -187,6 +192,7 @@ def cmd_estimate(args: argparse.Namespace) -> int:
         selected_storage_class=args.storage_class,
         growth_rate=growth_rate,
         forecast_years=args.forecast_years,
+        show_calculations=args.show_calculations,
     )
 
     if compare_classes is not None:
@@ -202,6 +208,7 @@ def cmd_estimate(args: argparse.Namespace) -> int:
             pricing=pricing,
             comparisons=comparisons,
             selected_storage_class=args.storage_class,
+            show_calculations=args.show_calculations,
         )
     else:
         comparisons = None
@@ -220,6 +227,7 @@ def cmd_estimate(args: argparse.Namespace) -> int:
                     forecast_years=args.forecast_years,
                     storage_comparisons=comparisons,
                     pricing_warnings=tuple(pricing_warnings),
+                    show_calculations=args.show_calculations,
                 ),
             )
         except OSError as exc:

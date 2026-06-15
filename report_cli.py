@@ -156,6 +156,11 @@ def register_report_command(subparsers: argparse._SubParsersAction) -> None:
         metavar="N",
         help="Max rows in CSV (0 = all abusive IPs, default)",
     )
+    report.add_argument(
+        "--show-calculations",
+        action="store_true",
+        help="Print step-by-step cost formulas (AWS calculator style)",
+    )
     report.set_defaults(func=cmd_report)
 
 
@@ -303,6 +308,7 @@ def cmd_report(args: argparse.Namespace) -> int:
         forecast_years=args.forecast_years,
         storage_comparisons=storage_comparisons,
         pricing_warnings=tuple(pricing_warnings),
+        show_calculations=args.show_calculations,
     )
 
     try:
@@ -382,6 +388,7 @@ def cmd_report(args: argparse.Namespace) -> int:
         selected_storage_class=args.storage_class,
         growth_rate=growth_rate,
         forecast_years=args.forecast_years,
+        show_calculations=args.show_calculations,
     )
     if storage_comparisons is not None:
         print_storage_class_comparison(
@@ -389,6 +396,7 @@ def cmd_report(args: argparse.Namespace) -> int:
             pricing=pricing,
             comparisons=storage_comparisons,
             selected_storage_class=args.storage_class,
+            show_calculations=args.show_calculations,
         )
 
     return 0
