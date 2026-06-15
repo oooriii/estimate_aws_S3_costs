@@ -55,6 +55,50 @@ def _print_scenario_table(
     )
 
 
+def print_storage_class_comparison(
+    console: Console,
+    *,
+    pricing: PricingConfig,
+    comparisons: tuple[ScenarioCosts, ...],
+    selected_storage_class: str,
+) -> None:
+    rate = pricing.display.usd_eur_rate
+    show_eur = pricing.display.show_eur
+    sorted_comparisons = sorted(comparisons, key=lambda item: item.monthly_total)
+    cheapest = sorted_comparisons[0].monthly_total
+
+    table = Table(show_header=True, header_style="bold cyan")
+    table.add_column("Storage class")
+    table.add_column("Monthly", justify="right")
+    table.add_column("Annual", justify="right")
+    table.add_column("Δ vs cheapest/mo", justify="right")
+
+    for scenario in sorted_comparisons:
+        delta = scenario.monthly_total - cheapest
+        delta_text = "—" if delta == 0 else format_money_detailed(delta, rate, show_eur)
+        class_label = scenario.name
+        if scenario.name == selected_storage_class:
+            class_label = f"[bold]{scenario.name}[/bold] (selected)"
+        table.add_row(
+            class_label,
+            format_money_detailed(scenario.monthly_total, rate, show_eur),
+            format_money_detailed(scenario.annual_total, rate, show_eur),
+            delta_text,
+        )
+
+    console.print(
+        Panel(
+            table,
+            title="[bold]Storage class comparison (S3 direct, realistic)[/bold]",
+            subtitle=(
+                "GET and egress costs are identical across classes; "
+                "only storage and Intelligent-Tiering monitoring differ."
+            ),
+            border_style="magenta",
+        )
+    )
+
+
 def print_estimate_report(
     console: Console,
     *,
@@ -63,6 +107,7 @@ def print_estimate_report(
     traffic: ProjectedTraffic,
     result: EstimateResult,
     pricing_warnings: list[str],
+    selected_storage_class: str = "STANDARD",
 ) -> None:
     disclaimer = Table(show_header=False, box=None, padding=(0, 2))
     disclaimer.add_column(style="yellow")
@@ -76,6 +121,7 @@ def print_estimate_report(
     disclaimer.add_row(
         f"FX: 1 USD = {pricing.display.usd_eur_rate:.4f} EUR (indicative only)."
     )
+    disclaimer.add_row(f"Detailed estimate storage class: {selected_storage_class}")
     disclaimer.add_row("AWS prices change. This is not a billing guarantee.")
 
     console.print(

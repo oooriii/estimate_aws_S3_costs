@@ -268,3 +268,24 @@ def build_estimates(
         conservative=conservative,
         realistic_cloudfront=realistic_cloudfront,
     )
+
+
+def compare_storage_classes(
+    stats: TrafficStats,
+    inventory: Inventory,
+    pricing: PricingConfig,
+    storage_classes: tuple[str, ...],
+) -> tuple[ScenarioCosts, ...]:
+    """S3 direct realistic costs per storage class (egress/GET unchanged)."""
+    realistic_traffic = project_traffic(stats, safety_margin=0.0)
+    return tuple(
+        calculate_s3_direct(
+            realistic_traffic.monthly_requests,
+            realistic_traffic.monthly_bytes,
+            inventory,
+            pricing,
+            storage_class,
+            scenario_name=storage_class,
+        )
+        for storage_class in storage_classes
+    )

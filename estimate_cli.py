@@ -6,8 +6,8 @@ from pathlib import Path
 from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
-from cost_model import Inventory, build_estimates
-from estimate_report import print_estimate_report
+from cost_model import Inventory, build_estimates, compare_storage_classes
+from estimate_report import print_estimate_report, print_storage_class_comparison
 from parser import parse_file
 from pricing.loader import load_pricing_config
 from pricing.schema import DEFAULT_GROWTH_RATE, STORAGE_CLASSES
@@ -19,6 +19,20 @@ def parse_growth_rate(value: str) -> float:
     if raw.endswith("%"):
         return float(raw[:-1]) / 100.0
     return float(raw)
+
+
+def parse_storage_classes(value: str) -> tuple[str, ...]:
+    classes = tuple(item.strip() for item in value.split(",") if item.strip())
+    if not classes:
+        raise ValueError("at least one storage class is required")
+
+    invalid = [item for item in classes if item not in STORAGE_CLASSES]
+    if invalid:
+        allowed = ", ".join(STORAGE_CLASSES)
+        raise ValueError(
+            f"unknown storage class(es): {', '.join(invalid)}. Allowed: {allowed}"
+        )
+    return classes
 
 
 def register_estimate_command(subparsers: argparse._SubParsersAction) -> None:
@@ -54,7 +68,17 @@ def register_estimate_command(subparsers: argparse._SubParsersAction) -> None:
         "--storage-class",
         choices=STORAGE_CLASSES,
         default="STANDARD",
-        help="S3 storage class for cost calculation",
+        help="S3 storage class for the detailed estimate",
+    )
+    estimate.add_argument(
+        "--compare-storage-classes",
+        nargs="?",
+        const=",".join(STORAGE_CLASSES),
+        metavar="CLASSES",
+        help=(
+            "Compare S3 direct costs across storage classes "
+            "(comma-separated; omit value to compare all)"
+        ),
     )
     estimate.set_defaults(func=cmd_estimate)
 
@@ -78,6 +102,14 @@ def cmd_estimate(args: argparse.Namespace) -> int:
             "Use a value like 10% or 0.1."
         )
         return 1
+
+    compare_classes: tuple[str, ...] | None = None
+    if args.compare_storage_classes is not None:
+        try:
+            compare_classes = parse_storage_classes(args.compare_storage_classes)
+        except ValueError as exc:
+            console.print(f"[red]Error:[/red] {exc}")
+            return 1
 
     if not args.pricing.is_file():
         console.print(
@@ -122,5 +154,21 @@ def cmd_estimate(args: argparse.Namespace) -> int:
         traffic=traffic,
         result=result,
         pricing_warnings=pricing_warnings,
+        selected_storage_class=args.storage_class,
     )
+
+    if compare_classes is not None:
+        comparisons = compare_storage_classes(
+            stats,
+            inventory,
+            pricing,
+            compare_classes,
+        )
+        print_storage_class_comparison(
+            console,
+            pricing=pricing,
+            comparisons=comparisons,
+            selected_storage_class=args.storage_class,
+        )
+
     return 0
