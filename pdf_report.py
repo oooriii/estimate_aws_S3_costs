@@ -6,6 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 
 from abuse import AnalysisResult, top_items
 from bots import BOT_CATEGORY_LABELS
@@ -118,14 +119,22 @@ class _PdfBuilder:
             self.pdf.set_x(self.pdf.l_margin)
             self.pdf.multi_cell(self.pdf.epw, 5, _pdf_text(subtitle))
             self.pdf.set_text_color(0, 0, 0)
+            self.pdf.set_x(self.pdf.l_margin)
 
     def add_key_values(self, rows: tuple[tuple[str, str], ...]) -> None:
         self.pdf.set_font("Helvetica", "", 10)
         for label, value in rows:
+            self.pdf.set_x(self.pdf.l_margin)
             self.pdf.set_font("Helvetica", "B", 10)
-            self.pdf.cell(52, 6, _pdf_text(f"{label}:"), new_x="RIGHT")
+            self.pdf.cell(52, 6, _pdf_text(f"{label}:"), new_x=XPos.RIGHT)
             self.pdf.set_font("Helvetica", "", 10)
-            self.pdf.cell(0, 6, _pdf_text(value), new_x="LMARGIN", new_y="NEXT")
+            self.pdf.cell(
+                0,
+                6,
+                _pdf_text(value),
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
+            )
 
     def add_table(
         self,
@@ -136,28 +145,52 @@ class _PdfBuilder:
     ) -> None:
         if not rows:
             self.pdf.set_font("Helvetica", "I", 10)
-            self.pdf.cell(0, 6, _pdf_text("No data."), new_x="LMARGIN", new_y="NEXT")
+            self.pdf.set_x(self.pdf.l_margin)
+            self.pdf.cell(
+                0,
+                6,
+                _pdf_text("No data."),
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
+            )
             return
 
-        widths = col_widths or _auto_col_widths(headers, rows)
+        widths = _fit_col_widths(
+            col_widths or _auto_col_widths(headers, rows, self.pdf.epw),
+            self.pdf.epw,
+        )
         line_height = 5
-        self.pdf.set_font("Helvetica", "B", 9)
-        for header, width in zip(headers, widths, strict=True):
-            self.pdf.cell(width, line_height, _pdf_text(header), border=1)
-        self.pdf.ln(line_height)
+        self._draw_table_row(headers, widths, line_height, style="B", size=9)
 
         self.pdf.set_font("Helvetica", "", 8)
         for row in rows:
             if self.pdf.get_y() > 270:
                 self.pdf.add_page()
-                self.pdf.set_font("Helvetica", "B", 9)
-                for header, width in zip(headers, widths, strict=True):
-                    self.pdf.cell(width, line_height, _pdf_text(header), border=1)
-                self.pdf.ln(line_height)
+                self._draw_table_row(headers, widths, line_height, style="B", size=9)
                 self.pdf.set_font("Helvetica", "", 8)
-            for value, width in zip(row, widths, strict=True):
-                self.pdf.cell(width, line_height, _pdf_text(value), border=1)
-            self.pdf.ln(line_height)
+            self._draw_table_row(row, widths, line_height, style="", size=8)
+
+    def _draw_table_row(
+        self,
+        cells: tuple[str, ...],
+        widths: tuple[float, ...],
+        line_height: float,
+        *,
+        style: str,
+        size: int,
+    ) -> None:
+        self.pdf.set_x(self.pdf.l_margin)
+        self.pdf.set_font("Helvetica", style, size)
+        last_index = len(cells) - 1
+        for index, (value, width) in enumerate(zip(cells, widths, strict=True)):
+            self.pdf.cell(
+                width,
+                line_height,
+                _pdf_text(value),
+                border=1,
+                new_x=XPos.LMARGIN if index == last_index else XPos.RIGHT,
+                new_y=YPos.NEXT if index == last_index else YPos.TOP,
+            )
 
     def add_bullets(self, items: tuple[str, ...]) -> None:
         self.pdf.set_font("Helvetica", "", 9)
@@ -477,14 +510,25 @@ def _truncate(text: str, limit: int) -> str:
 def _auto_col_widths(
     headers: tuple[str, ...],
     rows: tuple[tuple[str, ...], ...],
+    max_width: float,
 ) -> tuple[float, ...]:
-    usable = 190.0
     weight = tuple(
         max(len(header), *(len(row[idx]) for row in rows))
         for idx, header in enumerate(headers)
     )
     total = sum(weight) or 1
-    return tuple(usable * w / total for w in weight)
+    return tuple(max_width * w / total for w in weight)
+
+
+def _fit_col_widths(
+    widths: tuple[float, ...],
+    max_width: float,
+) -> tuple[float, ...]:
+    total = sum(widths)
+    if total <= max_width:
+        return widths
+    scale = max_width / total
+    return tuple(width * scale for width in widths)
 
 
 def _format_money_pdf(usd: float, rate: float, show_eur: bool = True) -> str:
