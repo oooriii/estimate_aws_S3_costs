@@ -72,3 +72,43 @@ def test_parse_log_line_auto_detects_error():
 
 def test_parse_log_line_returns_none_for_garbage():
     assert parse_log_line("not a log line") is None
+
+
+def test_iter_events_from_multitail_extract(tmp_path):
+    from source import iter_events_from_file
+
+    log_file = tmp_path / "multitail.log"
+    log_file.write_text(
+        "\n".join(
+            [
+                "==> /var/log/apache2/anubis_error.log <==",
+                "[Thu Jun 25 13:25:06.086004 2026] [proxy:error] "
+                "[pid 9059] [client 17.246.15.142:44990] timeout",
+                "==> /var/log/apache2/anubis_access.log <==",
+                '17.246.15.142 - - [25/Jun/2026:13:26:08 +0200] '
+                '"GET /browse HTTP/1.1" 200 100 "-" "Applebot/0.1"',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    events = list(iter_events_from_file(log_file))
+    assert len(events) == 2
+    assert events[0].kind == "error"
+    assert events[0].source.endswith("anubis_error.log")
+    assert events[0].remote_host == "17.246.15.142"
+    assert events[1].kind == "access"
+    assert events[1].source.endswith("anubis_access.log")
+
+
+def test_normalize_timestamp_strips_timezone_for_comparison():
+    from datetime import UTC, datetime
+
+    from events import normalize_timestamp
+
+    aware = datetime(2026, 6, 25, 13, 26, 8, tzinfo=UTC)
+    naive = datetime(2026, 6, 25, 13, 25, 6)
+    assert normalize_timestamp(aware) == datetime(2026, 6, 25, 13, 26, 8)
+    assert normalize_timestamp(naive) == naive
+

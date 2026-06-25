@@ -7,6 +7,13 @@ from typing import Literal
 LogKind = Literal["access", "error"]
 
 
+def normalize_timestamp(timestamp: datetime) -> datetime:
+    """Make access (tz-aware) and error (naive) timestamps comparable."""
+    if timestamp.tzinfo is not None:
+        return timestamp.replace(tzinfo=None)
+    return timestamp
+
+
 @dataclass(frozen=True)
 class LogEvent:
     """Normalized log record for live monitoring and aggregation."""
