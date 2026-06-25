@@ -15,3 +15,9 @@ wheels/
 
 # Reports (PDF + CSV)
 reports/
+
+
+# log and ruleset files
+logs_tmp.log
+ruleset.nft
+ruleset_*
