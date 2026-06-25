@@ -26,22 +26,38 @@ def _is_abusive_ip(
     stats_rps: float,
     stats_requests: int,
     thresholds: WatchThresholds,
+    *,
+    max_burst_rps: float = 0.0,
+    max_burst_requests: int = 0,
 ) -> bool:
-    return (
+    burst_abuse = (
+        max_burst_rps >= thresholds.min_burst_rps
+        and max_burst_requests >= thresholds.min_burst_requests
+    )
+    sustained_abuse = (
         stats_rps >= thresholds.min_rps_per_ip
         and stats_requests >= thresholds.min_requests_per_ip
     )
+    return burst_abuse or sustained_abuse
 
 
 def _is_abusive_subnet(
     stats_rps: float,
     stats_requests: int,
     thresholds: WatchThresholds,
+    *,
+    max_burst_rps: float = 0.0,
+    max_burst_requests: int = 0,
 ) -> bool:
-    return (
+    burst_abuse = (
+        max_burst_rps >= thresholds.min_burst_rps
+        and max_burst_requests >= thresholds.min_burst_requests
+    )
+    sustained_abuse = (
         stats_rps >= thresholds.min_rps_per_subnet
         and stats_requests >= thresholds.min_requests_per_subnet
     )
+    return burst_abuse or sustained_abuse
 
 
 def _is_abusive_country(
@@ -118,9 +134,20 @@ def recommend_blocks(
     for ip_stats in snapshot.ips:
         if ip_stats.key in ("-", "") or ip_stats.key in seen_ips:
             continue
-        if not _is_abusive_ip(ip_stats.rps, ip_stats.requests, thresholds):
+        if not _is_abusive_ip(
+            ip_stats.rps,
+            ip_stats.requests,
+            thresholds,
+            max_burst_rps=ip_stats.max_burst_rps,
+            max_burst_requests=ip_stats.max_burst_requests,
+        ):
             continue
         seen_ips.add(ip_stats.key)
+        reason = (
+            "high_burst_rps"
+            if ip_stats.max_burst_rps >= thresholds.min_burst_rps
+            else "high_ip_rps"
+        )
         recommendations.append(
             BlockRecommendation(
                 block_type="ip",
@@ -128,9 +155,13 @@ def recommend_blocks(
                 country_code=None,
                 country_name=None,
                 requests=ip_stats.requests,
-                rps=ip_stats.rps,
-                reason="high_ip_rps",
-                detail=f"UA: {ip_stats.top_user_agent[:80]}",
+                rps=max(ip_stats.rps, ip_stats.max_burst_rps),
+                reason=reason,
+                detail=(
+                    f"burst {ip_stats.max_burst_rps:.1f} rps / "
+                    f"{ip_stats.max_burst_requests} req; "
+                    f"UA: {ip_stats.top_user_agent[:60]}"
+                ),
             )
         )
 
@@ -139,10 +170,17 @@ def recommend_blocks(
             subnet_stats.rps,
             subnet_stats.requests,
             thresholds,
+            max_burst_rps=subnet_stats.max_burst_rps,
+            max_burst_requests=subnet_stats.max_burst_requests,
         ):
             continue
         if any(item.target == subnet_stats.key for item in recommendations):
             continue
+        reason = (
+            "high_burst_rps"
+            if subnet_stats.max_burst_rps >= thresholds.min_burst_rps
+            else "high_subnet_rps"
+        )
         recommendations.append(
             BlockRecommendation(
                 block_type="subnet",
@@ -150,9 +188,13 @@ def recommend_blocks(
                 country_code=None,
                 country_name=None,
                 requests=subnet_stats.requests,
-                rps=subnet_stats.rps,
-                reason="high_subnet_rps",
-                detail=f"UA: {subnet_stats.top_user_agent[:80]}",
+                rps=max(subnet_stats.rps, subnet_stats.max_burst_rps),
+                reason=reason,
+                detail=(
+                    f"burst {subnet_stats.max_burst_rps:.1f} rps / "
+                    f"{subnet_stats.max_burst_requests} req; "
+                    f"UA: {subnet_stats.top_user_agent[:60]}"
+                ),
             )
         )
 

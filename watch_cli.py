@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -13,97 +11,91 @@ from geo import MaxMindGeoIpResolver, open_geoip_resolver
 from source import iter_events
 from watch.aggregator import WatchAggregator
 from watch.blocking import recommend_blocks
-from watch.config import WatchThresholds
+from watch.config_loader import resolve_watch_runtime
 from watch.live_display import LiveMonitor, render_snapshot
+from watch.snapshot import SnapshotScheduler, write_blocks_csv, write_snapshot_json
 
 
-def _write_snapshot_csv(path: Path, snapshot, blocks) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.writer(handle)
-        writer.writerow(
-            [
-                "block_type",
-                "target",
-                "country_code",
-                "country_name",
-                "requests",
-                "rps",
-                "reason",
-                "detail",
-            ]
+def _process_events(
+    *,
+    console: Console,
+    aggregator: WatchAggregator,
+    thresholds,
+    input_paths: list[Path] | None,
+    live: bool,
+    refresh_seconds: float,
+    snapshot_scheduler: SnapshotScheduler | None,
+    export_csv: Path | None,
+    export_json: Path | None,
+) -> int:
+    reading_stdin = not input_paths
+    if live and reading_stdin and sys.stdin.isatty():
+        console.print(
+            "[red]Error:[/red] pipe Apache logs into stdin or pass log files.\n"
+            "Example: ssh host 'sudo tail -F /var/log/apache2/access_ssl.log' "
+            "| uv run python main.py watch --geoip-db GeoLite2-Country.mmdb"
         )
-        for item in blocks:
-            writer.writerow(
-                [
-                    item.block_type,
-                    item.target,
-                    item.country_code or "",
-                    item.country_name or "",
-                    item.requests,
-                    f"{item.rps:.4f}",
-                    item.reason,
-                    item.detail,
-                ]
-            )
+        return 1
 
+    def handle_snapshot(snapshot, blocks, *, now: datetime | None = None) -> None:
+        if snapshot_scheduler is not None and snapshot_scheduler.enabled:
+            written = snapshot_scheduler.maybe_write(snapshot, blocks, now=now)
+            if written is not None:
+                json_path, csv_path = written
+                console.print(
+                    f"[dim]Snapshot saved:[/dim] {json_path.name}, {csv_path.name}"
+                )
 
-def _write_snapshot_json(path: Path, snapshot, blocks) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "generated_at": datetime.now().isoformat(),
-        "window_seconds": snapshot.window_seconds,
-        "total_requests": snapshot.total_requests,
-        "current_rps": snapshot.current_rps,
-        "countries": [
-            {
-                "country_code": item.country_code,
-                "country_name": item.country_name,
-                "requests": item.requests,
-                "rps": item.rps,
-                "unique_ips": len(item.unique_ips),
-            }
-            for item in snapshot.countries
-        ],
-        "blocks": [
-            {
-                "block_type": item.block_type,
-                "target": item.target,
-                "country_code": item.country_code,
-                "country_name": item.country_name,
-                "requests": item.requests,
-                "rps": item.rps,
-                "reason": item.reason,
-                "detail": item.detail,
-            }
-            for item in blocks
-        ],
-    }
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    if live:
+        with LiveMonitor(
+            console,
+            refresh_per_second=1.0 / max(refresh_seconds, 0.1),
+        ) as monitor:
+            for event in iter_events(input_paths):
+                aggregator.ingest(event)
+                snapshot = aggregator.snapshot(now=event.timestamp)
+                blocks = recommend_blocks(snapshot, thresholds=thresholds)
+                monitor.update(snapshot, blocks)
+                handle_snapshot(snapshot, blocks, now=event.timestamp)
+    else:
+        last_snapshot = None
+        last_blocks: tuple = ()
+        for event in iter_events(input_paths):
+            aggregator.ingest(event)
+            last_snapshot = aggregator.snapshot(now=event.timestamp)
+            last_blocks = recommend_blocks(last_snapshot, thresholds=thresholds)
+            handle_snapshot(last_snapshot, last_blocks, now=event.timestamp)
 
+        if last_snapshot is None:
+            console.print("[yellow]Warning:[/yellow] no valid log events found.")
+            return 1
 
-def _build_thresholds(args: argparse.Namespace) -> WatchThresholds:
-    return WatchThresholds(
-        window_seconds=args.window,
-        min_rps_per_ip=args.min_rps_ip,
-        min_rps_per_subnet=args.min_rps_subnet,
-        min_rps_per_country=args.min_rps_country,
-        min_requests_per_ip=args.min_req_ip,
-        min_requests_per_subnet=args.min_req_subnet,
-        min_requests_per_country=args.min_req_country,
-        subnet_mask_v4=args.subnet_v4,
-        top_n=args.top,
-    )
+        render_snapshot(console, last_snapshot, last_blocks)
+
+        if export_csv is not None:
+            write_blocks_csv(export_csv, last_blocks)
+            console.print(f"[green]Block recommendations CSV:[/green] {export_csv}")
+        if export_json is not None:
+            write_snapshot_json(export_json, last_snapshot, last_blocks)
+            console.print(f"[green]Snapshot JSON:[/green] {export_json}")
+
+    return 0
 
 
 def cmd_watch(args: argparse.Namespace) -> int:
     console = Console()
-    thresholds = _build_thresholds(args)
+
+    try:
+        runtime_config, thresholds = resolve_watch_runtime(args)
+    except (OSError, RuntimeError, ValueError) as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        return 1
 
     resolver = None
-    if args.geoip_db is not None:
+    geoip_path = Path(runtime_config.geoip_db) if runtime_config.geoip_db else None
+    if geoip_path is not None:
         try:
-            resolver = open_geoip_resolver(args.geoip_db)
+            resolver = open_geoip_resolver(geoip_path)
         except (OSError, RuntimeError, ValueError) as exc:
             console.print(f"[red]Error:[/red] {exc}")
             return 1
@@ -111,52 +103,28 @@ def cmd_watch(args: argparse.Namespace) -> int:
     aggregator = WatchAggregator(thresholds=thresholds, geo_resolver=resolver)
     input_paths = args.files if args.files else None
 
+    snapshot_scheduler = None
+    if runtime_config.snapshots.every_seconds > 0:
+        snapshot_scheduler = SnapshotScheduler(
+            directory=Path(runtime_config.snapshots.directory),
+            every_seconds=runtime_config.snapshots.every_seconds,
+        )
+
     try:
-        reading_stdin = not input_paths
-        if args.live and reading_stdin and sys.stdin.isatty():
-            console.print(
-                "[red]Error:[/red] pipe Apache logs into stdin or pass log files.\n"
-                "Example: ssh host 'sudo tail -F /var/log/apache2/access_ssl.log' "
-                "| uv run python main.py watch --geoip-db GeoLite2-Country.mmdb"
-            )
-            return 1
-
-        if args.live:
-            with LiveMonitor(
-                console, refresh_per_second=1.0 / max(args.refresh, 0.1)
-            ) as monitor:
-                for event in iter_events(input_paths):
-                    aggregator.ingest(event)
-                    snapshot = aggregator.snapshot(now=event.timestamp)
-                    blocks = recommend_blocks(snapshot, thresholds=thresholds)
-                    monitor.update(snapshot, blocks)
-        else:
-            last_snapshot = None
-            last_blocks: tuple = ()
-            for event in iter_events(input_paths):
-                aggregator.ingest(event)
-                last_snapshot = aggregator.snapshot(now=event.timestamp)
-                last_blocks = recommend_blocks(last_snapshot, thresholds=thresholds)
-
-            if last_snapshot is None:
-                console.print("[yellow]Warning:[/yellow] no valid log events found.")
-                return 1
-
-            render_snapshot(console, last_snapshot, last_blocks)
-
-            if args.export_csv is not None:
-                _write_snapshot_csv(args.export_csv, last_snapshot, last_blocks)
-                console.print(
-                    f"[green]Block recommendations CSV:[/green] {args.export_csv}"
-                )
-            if args.export_json is not None:
-                _write_snapshot_json(args.export_json, last_snapshot, last_blocks)
-                console.print(f"[green]Snapshot JSON:[/green] {args.export_json}")
+        return _process_events(
+            console=console,
+            aggregator=aggregator,
+            thresholds=thresholds,
+            input_paths=input_paths,
+            live=runtime_config.live,
+            refresh_seconds=runtime_config.refresh_seconds,
+            snapshot_scheduler=snapshot_scheduler,
+            export_csv=args.export_csv,
+            export_json=args.export_json,
+        )
     finally:
         if isinstance(resolver, MaxMindGeoIpResolver):
             resolver.close()
-
-    return 0
 
 
 def register_watch_command(subparsers: argparse._SubParsersAction) -> None:
@@ -169,6 +137,12 @@ def register_watch_command(subparsers: argparse._SubParsersAction) -> None:
         nargs="*",
         type=Path,
         help="Log files to analyze (default: read from stdin)",
+    )
+    watch.add_argument(
+        "--config",
+        type=Path,
+        metavar="PATH",
+        help="Optional YAML config file (CLI flags override config values)",
     )
     watch.add_argument(
         "--geoip-db",
@@ -197,16 +171,35 @@ def register_watch_command(subparsers: argparse._SubParsersAction) -> None:
         help="Sliding window for RPS calculations (default: 300)",
     )
     watch.add_argument(
+        "--burst-window",
+        type=float,
+        default=3.0,
+        metavar="SEC",
+        help="Group requests within this gap as one burst (default: 3)",
+    )
+    watch.add_argument(
+        "--min-burst-rps",
+        type=float,
+        default=10.0,
+        help="Flag actor when a burst reaches this RPS (default: 10)",
+    )
+    watch.add_argument(
+        "--min-burst-req",
+        type=int,
+        default=20,
+        help="Minimum requests in a burst to flag an actor (default: 20)",
+    )
+    watch.add_argument(
         "--min-rps-ip",
         type=float,
         default=2.0,
-        help="Flag IP at or above this RPS (default: 2)",
+        help="Flag IP at or above this sustained RPS (default: 2)",
     )
     watch.add_argument(
         "--min-rps-subnet",
         type=float,
         default=5.0,
-        help="Flag /24 subnet at or above this RPS (default: 5)",
+        help="Flag /24 subnet at or above this sustained RPS (default: 5)",
     )
     watch.add_argument(
         "--min-rps-country",
@@ -245,6 +238,19 @@ def register_watch_command(subparsers: argparse._SubParsersAction) -> None:
         default=15,
         metavar="N",
         help="Top N rows per table (default: 15)",
+    )
+    watch.add_argument(
+        "--snapshot-dir",
+        type=Path,
+        metavar="PATH",
+        help="Directory for periodic snapshots (live mode)",
+    )
+    watch.add_argument(
+        "--snapshot-every",
+        type=float,
+        default=0.0,
+        metavar="SEC",
+        help="Write snapshot JSON/CSV every N seconds (0 = off, default)",
     )
     watch.add_argument(
         "--export-csv",

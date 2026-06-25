@@ -1,0 +1,25 @@
+# Example configuration for `uv run python main.py watch --config watch.example.yaml`
+#
+# CLI flags override values from this file when explicitly provided.
+
+geoip_db: GeoLite2-Country_20260612/GeoLite2-Country.mmdb
+refresh_seconds: 2.0
+live: true
+
+thresholds:
+  window_seconds: 300
+  burst_window_seconds: 3
+  min_burst_rps: 10
+  min_burst_requests: 20
+  min_rps_per_ip: 2
+  min_rps_per_subnet: 5
+  min_rps_per_country: 10
+  min_requests_per_ip: 50
+  min_requests_per_subnet: 100
+  min_requests_per_country: 200
+  subnet_mask_v4: 24
+  top_n: 15
+
+snapshots:
+  directory: reports/live
+  every_seconds: 900

@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 
 from events import LogEvent
 from geo import GeoIpResolver, classify_remote_host
+from watch.burst import BurstTracker
 from watch.config import WatchThresholds
 from watch.subnet import subnet_key
 
@@ -15,6 +16,9 @@ class ActorStats:
     key: str
     requests: int = 0
     rps: float = 0.0
+    burst_count: int = 0
+    max_burst_rps: float = 0.0
+    max_burst_requests: int = 0
     last_seen: datetime | None = None
     user_agents: Counter[str] = field(default_factory=Counter)
     statuses: Counter[int] = field(default_factory=Counter)
@@ -73,6 +77,12 @@ class WatchAggregator:
         self.geo_resolver = geo_resolver
         self._events: deque[tuple[datetime, LogEvent, str, str, str | None]] = deque()
         self._total_requests = 0
+        self._ip_bursts = BurstTracker(
+            burst_window_seconds=self.thresholds.burst_window_seconds
+        )
+        self._subnet_bursts = BurstTracker(
+            burst_window_seconds=self.thresholds.burst_window_seconds
+        )
 
     def ingest(self, event: LogEvent) -> None:
         country_code, country_name = _country_for_event(event, self.geo_resolver)
@@ -85,6 +95,12 @@ class WatchAggregator:
             (event.timestamp, event, country_code, country_name, subnet)
         )
         self._total_requests += 1
+
+        if event.remote_host not in ("-", ""):
+            self._ip_bursts.record(event.remote_host, event.timestamp)
+        if subnet is not None:
+            self._subnet_bursts.record(subnet, event.timestamp)
+
         self._prune(event.timestamp)
 
     def _prune(self, now: datetime) -> None:
@@ -166,6 +182,16 @@ class WatchAggregator:
             result: list[ActorStats] = []
             for stats in items.values():
                 stats.rps = stats.requests / window_seconds
+                if stats.key in by_ip:
+                    burst = self._ip_bursts.metrics(stats.key)
+                elif stats.key in by_subnet:
+                    burst = self._subnet_bursts.metrics(stats.key)
+                else:
+                    burst = None
+                if burst is not None:
+                    stats.burst_count = burst.burst_count
+                    stats.max_burst_rps = burst.max_burst_rps
+                    stats.max_burst_requests = burst.max_burst_requests
                 result.append(stats)
             return tuple(
                 sorted(result, key=lambda item: (-item.requests, item.key))[

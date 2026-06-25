@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fpdf2>=2.8.7",
     "geoip2>=4.8.0",
+    "pyyaml>=6.0.2",
     "rich>=15.0.0",
 ]
 

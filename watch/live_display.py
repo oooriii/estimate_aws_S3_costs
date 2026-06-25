@@ -34,11 +34,14 @@ def _actor_table(
     rows: tuple,
     *,
     show_ua: bool = False,
+    show_bursts: bool = False,
 ) -> Panel:
     table = Table(show_header=True, header_style="bold cyan")
     table.add_column("Key")
     table.add_column("Req", justify="right")
     table.add_column("RPS", justify="right")
+    if show_bursts:
+        table.add_column("Burst", justify="right")
     if show_ua:
         table.add_column("Top UA")
     else:
@@ -46,12 +49,15 @@ def _actor_table(
 
     for item in rows:
         kinds = ", ".join(f"{k}:{v}" for k, v in item.kinds.most_common(2))
-        table.add_row(
+        row = [
             _truncate(item.key, 36),
             f"{item.requests:,}",
             f"{item.rps:.2f}",
-            _truncate(item.top_user_agent if show_ua else kinds, 40),
-        )
+        ]
+        if show_bursts:
+            row.append(f"{item.max_burst_rps:.1f}")
+        row.append(_truncate(item.top_user_agent if show_ua else kinds, 40))
+        table.add_row(*row)
 
     return Panel(table, title=title, border_style="blue")
 
@@ -135,7 +141,7 @@ def build_layout(
     )
     layout["blocks"].update(_blocks_table(blocks))
     layout["countries"].update(_country_table(snapshot))
-    layout["ips"].update(_actor_table("Top IPs", snapshot.ips))
+    layout["ips"].update(_actor_table("Top IPs", snapshot.ips, show_bursts=True))
     layout["user_agents"].update(
         _actor_table("Top user-agents", snapshot.user_agents, show_ua=True)
     )
