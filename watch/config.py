@@ -1,0 +1,27 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+
+@dataclass
+class WatchThresholds:
+    """RPS-focused thresholds for flagging abusive traffic."""
+
+    window_seconds: float = 300.0
+    min_rps_per_ip: float = 2.0
+    min_rps_per_subnet: float = 5.0
+    min_rps_per_country: float = 10.0
+    min_requests_per_ip: int = 50
+    min_requests_per_subnet: int = 100
+    min_requests_per_country: int = 200
+    subnet_mask_v4: int = 24
+    subnet_mask_v6: int = 48
+    top_n: int = 15
+
+
+@dataclass
+class WatchConfig:
+    geoip_db: str | None = None
+    refresh_seconds: float = 2.0
+    live: bool = True
+    thresholds: WatchThresholds = field(default_factory=WatchThresholds)

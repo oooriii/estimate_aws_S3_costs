@@ -6,9 +6,8 @@ from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 from abuse import parse_log
-from estimate_cli import register_estimate_command
 from demand_cli import register_demand_command
-from static_cli import register_static_command
+from estimate_cli import register_estimate_command
 from export_csv import write_problematic_ips_csv
 from geo import MaxMindGeoIpResolver, open_geoip_resolver
 from pdf_report import write_analyze_pdf
@@ -21,6 +20,8 @@ from report import (
     print_traffic_stats,
 )
 from report_cli import register_report_command
+from static_cli import register_static_command
+from watch_cli import register_watch_command
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
@@ -208,6 +209,7 @@ def build_parser() -> argparse.ArgumentParser:
     register_static_command(subparsers)
     register_pricing_commands(subparsers)
     register_estimate_command(subparsers)
+    register_watch_command(subparsers)
 
     return parser
 
