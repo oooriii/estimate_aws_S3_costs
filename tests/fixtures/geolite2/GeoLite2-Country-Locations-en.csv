@@ -1,0 +1,3 @@
+geoname_id,locale_code,continent_code,continent_name,country_iso_code,country_name,is_in_european_union
+123456,en,EU,Europe,IS,Iceland,0
+789012,en,NA,North America,US,United States,0
