@@ -17,6 +17,51 @@ uv sync
 
 ## Usage
 
+### Live abuse monitor (`watch`)
+
+Monitor Apache **access** and **error** logs in real time to detect abusive
+request rates (RPS) and suggest blocks by country, subnet, or IP. Designed to
+protect server stability rather than analyze download bytes.
+
+**Live via SSH + tail** (recommended):
+
+```bash
+ssh user@server 'sudo tail -F /var/log/apache2/access_ssl.log /var/log/apache2/error_ssl.log' \
+  | uv run python main.py watch --geoip-db GeoLite2-Country_20260612/GeoLite2-Country.mmdb
+```
+
+Or use the helper script:
+
+```bash
+chmod +x scripts/remote-watch.sh
+./scripts/remote-watch.sh user@server
+```
+
+**Batch analysis** (local files or stdin):
+
+```bash
+uv run python main.py watch --no-live access_ssl.log error_ssl.log \
+  --geoip-db GeoLite2-Country_20260612/GeoLite2-Country.mmdb \
+  --export-csv reports/blocks.csv
+```
+
+| Flag | Description |
+|------|-------------|
+| `--geoip-db` | GeoLite2-Country.mmdb for country breakdown and block suggestions |
+| `--live` / `--no-live` | Rich live dashboard (default: live) |
+| `--window` | Sliding window in seconds for RPS (default: `300`) |
+| `--min-rps-country` | Flag country at or above this RPS (default: `10`) |
+| `--min-rps-subnet` | Flag /24 subnet at or above this RPS (default: `5`) |
+| `--min-rps-ip` | Flag IP at or above this RPS (default: `2`) |
+| `--min-req-country` | Minimum requests in window to flag a country (default: `200`) |
+| `--subnet-v4` | IPv4 grouping mask (default: `24`) |
+| `--export-csv` / `--export-json` | Export block recommendations (batch mode) |
+
+The live dashboard shows top IPs, user-agents, countries, and **suggested blocks**.
+Country blocks are intended for CloudFront geo restrictions or WAF; subnet and IP
+blocks for firewall or mod_security. Subnet ranges are derived from observed
+abusive traffic in the sliding window.
+
 ### Analyze logs
 
 ```bash
