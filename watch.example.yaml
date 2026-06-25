@@ -29,3 +29,15 @@ snapshots:
 country_blocks:
   display_limit: 5
   export_with_snapshots: true
+
+# Ignore localhost noise; trust Spanish and UDG traffic during abuse analysis.
+filters:
+  ignore_ips:
+    - 127.0.0.1
+    - ::1
+  ignore_private: true
+  whitelist_countries:
+    - ES
+    - LOCAL
+  whitelist_cidrs:
+    - 84.88.0.0/16

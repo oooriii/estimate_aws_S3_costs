@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from watch.filters import WatchFilters
+
 
 @dataclass
 class WatchThresholds:
@@ -45,3 +47,4 @@ class WatchConfig:
     thresholds: WatchThresholds = field(default_factory=WatchThresholds)
     snapshots: SnapshotSettings = field(default_factory=SnapshotSettings)
     country_blocks: CountryBlocksSettings = field(default_factory=CountryBlocksSettings)
+    filters: WatchFilters = field(default_factory=WatchFilters)

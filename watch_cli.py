@@ -98,6 +98,11 @@ def _process_events(
             return 1
 
         render_snapshot(console, last_snapshot, last_blocks)
+        if aggregator.skipped_events:
+            console.print(
+                f"[dim]Filtered out {aggregator.skipped_events:,} events "
+                "(ignore/whitelist rules).[/dim]"
+            )
 
         if export_csv is not None:
             write_blocks_csv(export_csv, last_blocks)
@@ -154,7 +159,11 @@ def cmd_watch(args: argparse.Namespace) -> int:
             "official CIDR recommendations disabled."
         )
 
-    aggregator = WatchAggregator(thresholds=thresholds, geo_resolver=resolver)
+    aggregator = WatchAggregator(
+        thresholds=thresholds,
+        geo_resolver=resolver,
+        filters=runtime_config.filters,
+    )
     input_paths = args.files if args.files else None
 
     snapshot_scheduler = None
@@ -208,6 +217,42 @@ def register_watch_command(subparsers: argparse._SubParsersAction) -> None:
         type=Path,
         metavar="PATH",
         help="MaxMind GeoLite2-Country.mmdb for country breakdown and blocks",
+    )
+    watch.add_argument(
+        "--ignore-ip",
+        type=str,
+        metavar="IPS",
+        help="Comma-separated IPs to ignore completely (default includes 127.0.0.1)",
+    )
+    watch.add_argument(
+        "--ignore-cidr",
+        type=str,
+        metavar="CIDRS",
+        help="Comma-separated CIDR ranges to ignore",
+    )
+    watch.add_argument(
+        "--ignore-private",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Ignore private/loopback/link-local IPs (default: on)",
+    )
+    watch.add_argument(
+        "--whitelist-ip",
+        type=str,
+        metavar="IPS",
+        help="Comma-separated trusted IPs to exclude from abuse detection",
+    )
+    watch.add_argument(
+        "--whitelist-cidr",
+        type=str,
+        metavar="CIDRS",
+        help="Comma-separated trusted CIDR ranges (e.g. 84.88.0.0/16)",
+    )
+    watch.add_argument(
+        "--whitelist-country",
+        type=str,
+        metavar="CODES",
+        help="Comma-separated ISO country codes to trust (e.g. ES,LOCAL)",
     )
     watch.add_argument(
         "--country-blocks-locations",

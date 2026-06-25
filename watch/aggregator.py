@@ -8,6 +8,7 @@ from events import LogEvent
 from geo import GeoIpResolver, classify_remote_host
 from watch.burst import BurstTracker
 from watch.config import WatchThresholds
+from watch.filters import WatchFilters
 from watch.subnet import subnet_key
 
 
@@ -72,11 +73,14 @@ class WatchAggregator:
         *,
         thresholds: WatchThresholds | None = None,
         geo_resolver: GeoIpResolver | None = None,
+        filters: WatchFilters | None = None,
     ) -> None:
         self.thresholds = thresholds or WatchThresholds()
         self.geo_resolver = geo_resolver
+        self.filters = filters or WatchFilters()
         self._events: deque[tuple[datetime, LogEvent, str, str, str | None]] = deque()
         self._total_requests = 0
+        self.skipped_events = 0
         self._ip_bursts = BurstTracker(
             burst_window_seconds=self.thresholds.burst_window_seconds
         )
@@ -85,6 +89,10 @@ class WatchAggregator:
         )
 
     def ingest(self, event: LogEvent) -> None:
+        if self.filters.should_skip(event, self.geo_resolver):
+            self.skipped_events += 1
+            return
+
         country_code, country_name = _country_for_event(event, self.geo_resolver)
         subnet = subnet_key(
             event.remote_host,

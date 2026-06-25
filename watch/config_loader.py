@@ -11,6 +11,55 @@ from watch.config import (
     WatchConfig,
     WatchThresholds,
 )
+from watch.filters import WatchFilters
+
+
+def _parse_csv_tuple(value: str | None) -> tuple[str, ...]:
+    if not value:
+        return ()
+    return tuple(item.strip() for item in value.split(",") if item.strip())
+
+
+def _load_filters(raw: dict[str, Any] | None) -> WatchFilters:
+    if not raw:
+        return WatchFilters()
+
+    def as_tuple(key: str) -> tuple[str, ...]:
+        if key not in raw or raw[key] is None:
+            return ()
+        value = raw[key]
+        if isinstance(value, str):
+            return _parse_csv_tuple(value)
+        if isinstance(value, list):
+            return tuple(str(item) for item in value)
+        raise ValueError(f"'filters.{key}' must be a list or comma-separated string.")
+
+    filters = WatchFilters()
+    ignore_ips = as_tuple("ignore_ips")
+    if ignore_ips:
+        filters.ignore_ips = ignore_ips
+    ignore_cidrs = as_tuple("ignore_cidrs")
+    if ignore_cidrs:
+        filters.ignore_cidrs = ignore_cidrs
+    if "ignore_private" in raw:
+        filters.ignore_private = bool(raw["ignore_private"])
+    whitelist_ips = as_tuple("whitelist_ips")
+    if whitelist_ips:
+        filters.whitelist_ips = whitelist_ips
+    whitelist_cidrs = as_tuple("whitelist_cidrs")
+    if whitelist_cidrs:
+        filters.whitelist_cidrs = whitelist_cidrs
+    whitelist_countries = as_tuple("whitelist_countries")
+    if whitelist_countries:
+        filters.whitelist_countries = tuple(c.upper() for c in whitelist_countries)
+    return WatchFilters(
+        ignore_ips=filters.ignore_ips,
+        ignore_cidrs=filters.ignore_cidrs,
+        ignore_private=filters.ignore_private,
+        whitelist_ips=filters.whitelist_ips,
+        whitelist_cidrs=filters.whitelist_cidrs,
+        whitelist_countries=filters.whitelist_countries,
+    )
 
 
 def _require_yaml() -> Any:
@@ -127,6 +176,10 @@ def load_watch_config(path: Path) -> WatchConfig:
         ):
             raise ValueError("'country_blocks' must be a mapping.")
         config.country_blocks = _load_country_blocks(raw.get("country_blocks"))
+    if "filters" in raw:
+        if raw["filters"] is not None and not isinstance(raw["filters"], dict):
+            raise ValueError("'filters' must be a mapping.")
+        config.filters = _load_filters(raw.get("filters"))
 
     return config
 
@@ -202,5 +255,31 @@ def resolve_watch_runtime(
         )
     if _cli_flag_provided("--country-cidr-limit", argv):
         country_blocks.display_limit = args.country_cidr_limit
+
+    filters = config.filters
+    if _cli_flag_provided("--ignore-ip", argv):
+        filters.ignore_ips = _parse_csv_tuple(args.ignore_ip)
+    if _cli_flag_provided("--ignore-cidr", argv):
+        filters.ignore_cidrs = _parse_csv_tuple(args.ignore_cidr)
+    if _cli_flag_provided("--no-ignore-private", argv) or _cli_flag_provided(
+        "--ignore-private", argv
+    ):
+        filters.ignore_private = args.ignore_private
+    if _cli_flag_provided("--whitelist-ip", argv):
+        filters.whitelist_ips = _parse_csv_tuple(args.whitelist_ip)
+    if _cli_flag_provided("--whitelist-cidr", argv):
+        filters.whitelist_cidrs = _parse_csv_tuple(args.whitelist_cidr)
+    if _cli_flag_provided("--whitelist-country", argv):
+        filters.whitelist_countries = tuple(
+            c.upper() for c in _parse_csv_tuple(args.whitelist_country)
+        )
+    config.filters = WatchFilters(
+        ignore_ips=filters.ignore_ips,
+        ignore_cidrs=filters.ignore_cidrs,
+        ignore_private=filters.ignore_private,
+        whitelist_ips=filters.whitelist_ips,
+        whitelist_cidrs=filters.whitelist_cidrs,
+        whitelist_countries=filters.whitelist_countries,
+    )
 
     return config, thresholds
