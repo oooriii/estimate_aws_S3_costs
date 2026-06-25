@@ -91,6 +91,54 @@ Official country CIDR files are auto-detected next to `--geoip-db` when
 The dashboard shows the largest official prefixes; use `--export-country-cidrs` or
 snapshots to export the complete list for firewall rules.
 
+**Filters and whitelist** (ignore localhost, trust your users):
+
+```yaml
+filters:
+  ignore_ips: [127.0.0.1, ::1]
+  ignore_private: true
+  whitelist_countries: [ES, LOCAL]   # never flag Spain / private nets
+  whitelist_cidrs: [84.88.0.0/16]  # UDG campus range
+```
+
+CLI equivalents: `--ignore-ip`, `--whitelist-country ES`, `--whitelist-cidr 84.88.0.0/16`.
+Filtered traffic is excluded from abuse metrics so bot floods are easier to see.
+
+**Large log analysis** (recommended when the server is under stress):
+
+```bash
+# On the server: extract recent lines only (low overhead)
+ssh user@server 'sudo tail -n 1000000 \
+  /var/log/apache2/anubis_access.log \
+  /var/log/apache2/anubis_error.log' > logs_stress.txt
+
+# Analyze locally (memory stays bounded by --window)
+uv run python main.py watch --no-live logs_stress.txt \
+  --config watch.example.yaml \
+  --export-csv reports/blocks.csv \
+  --export-country-cidrs reports/country-cidrs
+```
+
+`tail -n 1000000` is preferable to `cat` on multi-GB rotated logs: you get the
+most recent traffic without reading the entire history. Use `grep` first if you
+need a specific hour.
+
+**Consolidate iptables IP lists** (reduce kernel memory):
+
+```bash
+uv run python main.py consolidate blocked_ips.txt \
+  --geoip-db GeoLite2-Country_20260612/GeoLite2-Country.mmdb \
+  --csv reports/consolidated.csv \
+  --ipset reports/blocked-abuse.sh
+```
+
+Collapses thousands of per-IP rules into fewer CIDR ranges, grouped by country.
+Review the output before applying firewall changes.
+
+**Note on spoofed bots:** user-agent strings like `Applebot` can be faked.
+Treat UA as a hint; prefer IP reputation, GeoIP country, request patterns
+(`/discover`, `/search-filter`), and burst RPS when deciding blocks.
+
 ### Analyze logs
 
 ```bash
